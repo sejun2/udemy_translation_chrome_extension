@@ -3,8 +3,7 @@ export interface TranslationConfig {
   showOriginal?: boolean;
   originalPosition?: 'above' | 'below';
   targetLanguage?: string;
-  translationEngine?: 'google' | 'deepseek';
-  googleApiKey?: string;
+  translationEngine?: 'chrome' | 'deepseek';
   deepseekApiKey?: string;
 }
 

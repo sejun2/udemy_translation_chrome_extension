@@ -1,5 +1,7 @@
 import { StorageManager } from '../utils/storage';
 import { TranslationConfig } from '../utils/types';
+import { Translator } from '../utils/translator';
+import { SentenceMerger } from '../utils/sentenceMerger';
 
 class UdemySubtitleTranslator {
   private captionObserver: MutationObserver | null = null;
@@ -13,6 +15,9 @@ class UdemySubtitleTranslator {
   private isUpdatingCaption = false;
   private transcriptUpdateScheduled = false;
   private maintenanceInterval: number | null = null;
+  private translationCache = new Map<string, string>();
+  private pendingTranslations = new Set<string>();
+  private translationInProgress = false;
 
   async init() {
     console.log('[Udemy Translator] Initializing with transcript reuse strategy...');
@@ -145,8 +150,18 @@ class UdemySubtitleTranslator {
   private async processTranscriptPanel(panel: Element) {
     console.log('[Udemy Translator] Hooking into transcript panel for active cue detection...');
     this.transcriptPanel = panel;
+
+    // Start observing immediately so caption updates work during translation
     this.updateCaptionFromTranscript();
     this.observeTranscriptPanel(panel);
+
+    // Translate transcript in background if using DeepSeek
+    if (this.config?.translationEngine === 'deepseek') {
+      // Don't await - let it run in background
+      this.translateTranscriptPanel(panel).catch(err => {
+        console.error('[Udemy Translator] Background translation error:', err);
+      });
+    }
   }
 
   private observeTranscriptPanel(panel: Element) {
@@ -322,6 +337,15 @@ class UdemySubtitleTranslator {
 
     const cueTextElement = activeCue.querySelector('[data-purpose="cue-text"]') || activeCue;
     const text = cueTextElement.textContent?.trim() || '';
+
+    // If using DeepSeek, also update originalCaptionText from data attribute
+    if (this.config?.translationEngine === 'deepseek') {
+      const originalText = cueTextElement.getAttribute('data-original-text');
+      if (originalText) {
+        this.originalCaptionText = originalText.trim();
+      }
+    }
+
     return text || null;
   }
 
@@ -402,6 +426,124 @@ class UdemySubtitleTranslator {
     this.isUpdatingCaption = false;
   }
 
+  /**
+   * Translate all cues in the transcript panel
+   */
+  private async translateTranscriptPanel(panel: Element) {
+    if (!this.config?.deepseekApiKey || !this.config?.targetLanguage) {
+      console.warn('[Udemy Translator] DeepSeek API key or target language not configured');
+      return;
+    }
+
+    console.log('[Udemy Translator] Starting DeepSeek translation for transcript...');
+
+    // Get all transcript cues
+    const allCues = Array.from(panel.querySelectorAll('[data-purpose="transcript-cue"]'));
+    if (allCues.length === 0) {
+      console.log('[Udemy Translator] No transcript cues found');
+      return;
+    }
+
+    console.log(`[Udemy Translator] Found ${allCues.length} cues to translate`);
+
+    // Group cues by sentence to handle fragmented text
+    const groupedCues = SentenceMerger.groupCuesBySentence(allCues);
+
+    console.log(`[Udemy Translator] Grouped into ${groupedCues.length} sentence groups`);
+
+    // Translate each group in real-time
+    for (const group of groupedCues) {
+      await this.translateCueGroup(group.cues, group.text);
+    }
+
+    console.log('[Udemy Translator] Translation completed');
+  }
+
+  /**
+   * Translate a group of cues that form a complete sentence
+   * Updates the DOM immediately when translation is received
+   */
+  private async translateCueGroup(cues: Element[], mergedText: string) {
+    if (cues.length === 0 || !mergedText) return;
+
+    // Check cache first
+    if (this.translationCache.has(mergedText)) {
+      const cachedTranslation = this.translationCache.get(mergedText)!;
+      this.applyCachedTranslationToCues(cues, cachedTranslation);
+      return;
+    }
+
+    // Skip if already pending
+    if (this.pendingTranslations.has(mergedText)) {
+      return;
+    }
+
+    this.pendingTranslations.add(mergedText);
+
+    try {
+      // Translate using DeepSeek
+      const result = await Translator.translateWithDeepSeek(
+        mergedText,
+        this.config!.deepseekApiKey!,
+        this.config!.targetLanguage || 'Korean'
+      );
+
+      if (result.success && result.translatedText) {
+        // Cache the result
+        this.translationCache.set(mergedText, result.translatedText);
+
+        // Apply translation to cues IMMEDIATELY
+        this.applyTranslationToCues(cues, result.translatedText);
+
+        console.log(`[Udemy Translator] ✓ Translated: "${mergedText.substring(0, 30)}..." → "${result.translatedText.substring(0, 30)}..."`);
+      } else {
+        console.error(`[Udemy Translator] Translation failed: ${result.error}`);
+        // Keep original text
+        this.applyTranslationToCues(cues, mergedText);
+      }
+    } catch (error) {
+      console.error('[Udemy Translator] Translation error:', error);
+      // Keep original text
+      this.applyTranslationToCues(cues, mergedText);
+    } finally {
+      this.pendingTranslations.delete(mergedText);
+    }
+  }
+
+  /**
+   * Apply cached translation to cues
+   */
+  private applyCachedTranslationToCues(cues: Element[], translation: string) {
+    // Apply translation to ALL cues in the group
+    for (const cue of cues) {
+      const cueTextElement = cue.querySelector('[data-purpose="cue-text"]');
+      if (cueTextElement) {
+        // Store original text before replacing
+        if (!cueTextElement.getAttribute('data-original-text')) {
+          cueTextElement.setAttribute('data-original-text', cueTextElement.textContent || '');
+        }
+        cueTextElement.textContent = translation;
+      }
+    }
+  }
+
+  /**
+   * Apply translation to DOM immediately (real-time update)
+   */
+  private applyTranslationToCues(cues: Element[], translation: string) {
+    // Apply translation to ALL cues in the group
+    for (const cue of cues) {
+      const cueTextElement = cue.querySelector('[data-purpose="cue-text"]');
+      if (cueTextElement) {
+        // Store original text before replacing
+        if (!cueTextElement.getAttribute('data-original-text')) {
+          cueTextElement.setAttribute('data-original-text', cueTextElement.textContent || '');
+        }
+        cueTextElement.textContent = translation;
+      }
+    }
+  }
+
   destroy() {
     if (this.transcriptObserver) {
       this.transcriptObserver.disconnect();
@@ -413,6 +555,8 @@ class UdemySubtitleTranslator {
     }
     this.captionContainer = null;
     this.transcriptPanel = null;
+    this.translationCache.clear();
+    this.pendingTranslations.clear();
   }
 }
 

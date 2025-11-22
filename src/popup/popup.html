@@ -19,6 +19,33 @@
     </div>
 
     <div class="section">
+      <label for="translationEngine">번역 방식</label>
+      <select id="translationEngine">
+        <option value="chrome">크롬 내장 번역</option>
+        <option value="deepseek">DeepSeek API</option>
+      </select>
+    </div>
+
+    <div class="section" id="deepseekSection" style="display: none;">
+      <label for="deepseekApiKey">DeepSeek API 키</label>
+      <input type="password" id="deepseekApiKey" placeholder="sk-...">
+      <p class="hint-small">API 키는 안전하게 저장됩니다.</p>
+    </div>
+
+    <div class="section">
+      <label for="targetLanguage">번역 언어</label>
+      <select id="targetLanguage">
+        <option value="Korean">한국어</option>
+        <option value="English">English</option>
+        <option value="Japanese">日本語</option>
+        <option value="Chinese">中文</option>
+        <option value="Spanish">Español</option>
+        <option value="French">Français</option>
+      </select>
+      <p class="hint-small">DeepSeek API 사용 시에만 적용됩니다.</p>
+    </div>
+
+    <div class="section">
       <label class="checkbox-row">
         <input type="checkbox" id="showOriginal">
         <span>원본 자막도 함께 표시</span>
