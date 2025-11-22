@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Udemy Subtitle Translator</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <div class="container">
+    <h1>Udemy Subtitle Helper</h1>
+
+    <div class="section">
+      <label class="toggle-container">
+        <span>번역 기능 활성화</span>
+        <input type="checkbox" id="enableTranslation">
+        <span class="toggle-slider"></span>
+      </label>
+    </div>
+
+    <div class="section">
+      <label class="checkbox-row">
+        <input type="checkbox" id="showOriginal">
+        <span>원본 자막도 함께 표시</span>
+      </label>
+    </div>
+
+    <div class="section">
+      <label for="originalPosition">원본 자막 위치</label>
+      <select id="originalPosition">
+        <option value="below">번역 아래</option>
+        <option value="above">번역 위</option>
+      </select>
+    </div>
+
+    <div class="section">
+      <p class="hint">설정 저장 시 현재 Udemy 탭이 새로고침됩니다.</p>
+      <button id="saveButton" class="save-button">저장</button>
+    </div>
+
+    <div id="status" class="status"></div>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>
