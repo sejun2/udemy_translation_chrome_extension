@@ -1,143 +1,76 @@
-# Udemy Subtitle Translator
+# Udemy Subtitle Helper
 
-Chrome extension that translates Udemy video subtitles in real-time using Google Translate API or DeepSeek AI.
+크롬 전용 Udemy 자막 보조 익스텐션입니다. 대본(Transcript) 탭의 **현재 하이라이트된 자막**을 그대로 영상 캡션 영역에 덮어써 보여 줍니다. 번역은 크롬 내장 번역 기능으로 대본 탭을 번역해두면 자동으로 적용됩니다. 별도의 API 키나 외부 번역 호출은 사용하지 않습니다.
 
-## Features
+## 주요 기능
+- 대본 탭의 활성(하이라이트) 자막을 영상 캡션에 실시간 반영
+- 원본 자막 표시 여부/위치(번역 위나 아래) 설정 가능
+- 대본 패널 토글 자동 시도 및 패널/캡션 DOM 교체 시 자동 재연결
+- API 호출 없음, 네트워크 부담 최소화
 
-- Real-time subtitle translation on Udemy courses
-- Support for multiple languages (Korean, English, Japanese, Chinese, Spanish, French, German)
-- Two translation engines: Google Translate and DeepSeek AI
-- Simple and intuitive UI for settings
-- Displays both original and translated subtitles
-- Automatic subtitle detection and translation
+## 필수 조건
+- **브라우저**: Google Chrome 사용
+- **번역 방법**: 크롬 내장 번역(우클릭 → “한국어로 번역” 또는 주소창/번역 아이콘 클릭)으로 **대본 탭**을 번역해 두어야 합니다. 익스텐션은 번역된 대본 텍스트를 그대로 캡션에 옮깁니다.
 
-## Installation
-
-### Development
-
-1. Install dependencies:
-   ```bash
-   npm install
-   ```
-
-2. Build the extension:
-   ```bash
-   npm run build
-   ```
-
-3. Load the extension in Chrome:
-   - Open Chrome and navigate to `chrome://extensions/`
-   - Enable "Developer mode" in the top right
-   - Click "Load unpacked"
-   - Select the `dist` folder from this project
-
-### Production
-
-1. Build for production:
-   ```bash
-   npm run build
-   ```
-
-2. The extension will be built in the `dist` folder
-
-## Usage
-
-1. Get an API key:
-   - **Google Translate**: [Google Cloud Console](https://console.cloud.google.com/)
-   - **DeepSeek**: [DeepSeek Platform](https://platform.deepseek.com/)
-
-2. Click the extension icon in Chrome toolbar
-
-3. Configure settings:
-   - Enable translation toggle
-   - Select target language (Korean is default)
-   - Choose translation engine (Google or DeepSeek)
-   - Enter your API key
-   - Click "Save Settings"
-
-4. Navigate to any Udemy course video
-
-5. Enable subtitles on the video player
-
-6. Translations will appear automatically above the original subtitles
-
-## Development
-
-### Watch mode
-
+## 설치
+1) 의존성 설치
 ```bash
-npm run dev
+npm install
+```
+2) 빌드
+```bash
+npm run build
+```
+3) 크롬에 로드
+```
+chrome://extensions → 개발자 모드 ON → "Load unpacked" → dist/ 선택
 ```
 
-### Testing
+## 사용법
+1) Udemy 강의 페이지에서 **Transcript(대본) 패널**을 켭니다. (익스텐션이 자동으로 열려고 시도)
+2) 크롬 내장 번역으로 **대본 패널을 번역**합니다. (우클릭 번역 또는 주소창/번역 아이콘)
+3) 확장 프로그램 팝업에서:
+   - “번역 기능 활성화” 토글 ON
+   - 원본 자막 표시 여부, 위치(번역 위/아래) 선택
+   - 저장하면 현재 Udemy 탭이 새로고침됩니다.
+4) 영상 재생 시 대본에서 하이라이트된 줄이 번역된 상태로 캡션 영역에 표시되고, 옵션에 따라 원본 자막이 함께 나타납니다.
 
-Run E2E tests with Playwright:
+## 동작 원리
+- 대본 패널의 활성/하이라이트된 cue를 감지해 해당 텍스트를 영상 캡션 노드에 덮어씁니다.
+- 캡션/대본 DOM이 교체되면 주기적으로 새 노드를 찾아 다시 연결하고 현재 활성 자막을 즉시 복원합니다.
+- 네트워크 번역 호출은 모두 제거되어 있으며, 번역은 크롬의 페이지 번역 결과를 그대로 사용합니다.
 
+## 설정 항목
+- 번역 기능 활성화
+- 원본 자막 표시 (ON/OFF)
+- 원본 자막 위치: 번역 위 / 번역 아래
+
+## 개발/빌드
+- 개발용 watch: `npm run dev`
+- 프로덕션 빌드: `npm run build`
+
+## 테스트
+Playwright E2E:
 ```bash
 npm test
 ```
 
-Run tests in UI mode:
-
-```bash
-npm run test:ui
-```
-
-Debug tests:
-
-```bash
-npm run test:debug
-```
-
-## Project Structure
-
+## 프로젝트 구조
 ```
 udemy_translation/
 ├── src/
-│   ├── background/       # Service worker
-│   ├── content/          # Content script for Udemy pages
-│   ├── popup/            # Extension popup UI
-│   └── utils/            # Shared utilities
-├── tests/
-│   └── e2e/             # Playwright E2E tests
-├── public/              # Static files (manifest, icons)
-└── dist/                # Built extension (generated)
+│   ├── background/   # 서비스 워커
+│   ├── content/      # Udemy 페이지용 콘텐츠 스크립트
+│   ├── popup/        # 팝업 UI
+│   └── utils/        # 스토리지/타입 등 공용 코드
+├── public/           # manifest 등 정적 파일
+├── dist/             # 빌드 산출물
+└── tests/            # Playwright E2E
 ```
 
-## Technologies
+## 참고 사항
+- 이 익스텐션은 자막 번역을 위해 **크롬 내장 번역**에 의존합니다. 다른 브라우저나 외부 번역 API 키는 필요하지 않습니다.
+- Udemy DOM 구조가 변할 수 있으므로, 대본/캡션 셀렉터가 바뀌면 업데이트가 필요할 수 있습니다.
 
-- TypeScript
-- Chrome Extension Manifest V3
-- Webpack
-- Playwright (E2E testing)
-- Google Translate API
-- DeepSeek API
-
-## API Requirements
-
-### Google Translate API
-
-1. Create a project in Google Cloud Console
-2. Enable the Cloud Translation API
-3. Create credentials (API Key)
-4. Copy the API key to the extension settings
-
-### DeepSeek API
-
-1. Sign up at DeepSeek Platform
-2. Generate an API key
-3. Copy the API key to the extension settings
-
-## Supported Languages
-
-- 한국어 (Korean) - Default
-- English
-- 日本語 (Japanese)
-- 中文 (Chinese)
-- Español (Spanish)
-- Français (French)
-- Deutsch (German)
-
-## License
-
+## 라이선스
 MIT
