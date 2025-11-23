@@ -19,6 +19,8 @@ class UdemySubtitleTranslator {
   private totalBatches = 0;
   private completedBatches = 0;
   private isTranslating = false;
+  private settingsButton: HTMLElement | null = null;
+  private settingsMenu: HTMLElement | null = null;
 
   async init() {
     console.log('[Udemy Translator] Initializing with transcript reuse strategy...');
@@ -64,7 +66,10 @@ class UdemySubtitleTranslator {
     // Step 3: Observe active caption for real-time display
     setTimeout(() => this.waitForCaptionDisplay(), 1500);
 
-    // Step 4: Lightweight maintenance to reattach observers if DOM gets replaced
+    // Step 4: Add settings button to video controls
+    setTimeout(() => this.addSettingsButton(), 2000);
+
+    // Step 5: Lightweight maintenance to reattach observers if DOM gets replaced
     this.startMaintenanceLoop();
   }
 
@@ -684,6 +689,212 @@ class UdemySubtitleTranslator {
     }, 2000);
   }
 
+  /**
+   * Add settings button to video controls
+   */
+  private addSettingsButton() {
+    // Check if button already exists
+    if (this.settingsButton && document.body.contains(this.settingsButton)) {
+      return;
+    }
+
+    // Find the control bar
+    const controlBar = document.querySelector('[data-purpose="video-controls"]');
+    if (!controlBar) {
+      console.log('[Udemy Translator] Video controls not found');
+      return;
+    }
+
+    // Find the transcript toggle button as reference
+    const transcriptToggle = controlBar.querySelector('[data-purpose="transcript-toggle"]');
+    if (!transcriptToggle || !transcriptToggle.parentElement) {
+      console.log('[Udemy Translator] Transcript toggle not found');
+      return;
+    }
+
+    // Create settings button container (popper wrapper)
+    const buttonContainer = document.createElement('div');
+    buttonContainer.className = 'popper-module--popper--mM5Ie';
+
+    // Create settings button
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = 'ud-btn ud-btn-small ud-btn-ghost ud-btn-text-sm control-bar-dropdown--trigger--FnmP- control-bar-dropdown--trigger-dark--ZK26r control-bar-dropdown--trigger-small--ogRJ4';
+    button.setAttribute('data-purpose', 'caption-settings-toggle');
+    button.innerHTML = `
+      <svg aria-label="자막 설정" role="img" focusable="false" class="ud-icon ud-icon-medium">
+        <use xlink:href="#icon-settings"></use>
+      </svg>
+    `;
+
+    // Create settings menu
+    const menu = this.createSettingsMenu();
+
+    buttonContainer.appendChild(button);
+    buttonContainer.appendChild(menu);
+
+    // Insert after transcript toggle
+    transcriptToggle.parentElement.insertAdjacentElement('afterend', buttonContainer);
+
+    // Add event listener to toggle menu
+    button.addEventListener('click', (e) => {
+      e.stopPropagation();
+      this.toggleSettingsMenu();
+    });
+
+    // Close menu when clicking outside
+    document.addEventListener('click', (e) => {
+      if (menu.style.display === 'block' && !buttonContainer.contains(e.target as Node)) {
+        this.closeSettingsMenu();
+      }
+    });
+
+    this.settingsButton = button;
+    this.settingsMenu = menu;
+
+    console.log('[Udemy Translator] Settings button added to video controls');
+  }
+
+  /**
+   * Create settings menu
+   */
+  private createSettingsMenu(): HTMLElement {
+    const menu = document.createElement('div');
+    menu.className = 'popper-module--popper-content--XE9z5';
+    menu.style.cssText = `
+      display: none;
+      position: absolute;
+      bottom: 100%;
+      right: 0;
+      margin-bottom: 0.8rem;
+      background: rgba(28, 29, 31, 0.98);
+      border-radius: 8px;
+      padding: 8px 0;
+      min-width: 200px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+      z-index: 999999;
+    `;
+
+    menu.innerHTML = `
+      <div style="padding: 8px 16px; border-bottom: 1px solid rgba(255, 255, 255, 0.1); margin-bottom: 8px;">
+        <div style="color: #fff; font-size: 14px; font-weight: 600;">자막 설정</div>
+      </div>
+      <div style="padding: 4px 0;">
+        <button type="button" class="ud-btn ud-btn-medium ud-btn-ghost ud-text-sm ud-block-list-item ud-block-list-item-small ud-block-list-item-neutral" data-action="toggle-original" style="width: 100%; justify-content: flex-start; padding: 8px 16px;">
+          <div class="ud-block-list-item-content" style="display: flex; align-items: center; justify-content: space-between; width: 100%;">
+            <span>원본 자막 표시</span>
+            <span class="control-bar-dropdown--checkbox-slider--3T-2W" style="margin-left: auto;"></span>
+          </div>
+        </button>
+        <button type="button" class="ud-btn ud-btn-medium ud-btn-ghost ud-text-sm ud-block-list-item ud-block-list-item-small ud-block-list-item-neutral" data-action="toggle-position" style="width: 100%; justify-content: flex-start; padding: 8px 16px;">
+          <div class="ud-block-list-item-content" style="display: flex; align-items: center; justify-content: space-between; width: 100%;">
+            <span>원본 위치</span>
+            <span class="position-indicator" style="margin-left: auto; font-size: 12px; color: #ccc;">아래</span>
+          </div>
+        </button>
+      </div>
+    `;
+
+    // Update initial state
+    this.updateMenuState(menu);
+
+    // Add event listeners
+    const toggleOriginalBtn = menu.querySelector('[data-action="toggle-original"]');
+    const togglePositionBtn = menu.querySelector('[data-action="toggle-position"]');
+
+    toggleOriginalBtn?.addEventListener('click', () => this.toggleShowOriginal());
+    togglePositionBtn?.addEventListener('click', () => this.toggleOriginalPosition());
+
+    return menu;
+  }
+
+  /**
+   * Update menu state based on current config
+   */
+  private updateMenuState(menu: HTMLElement) {
+    if (!this.config) return;
+
+    const toggleOriginalBtn = menu.querySelector('[data-action="toggle-original"]');
+    const positionIndicator = menu.querySelector('.position-indicator');
+
+    // Update toggle state
+    if (toggleOriginalBtn) {
+      if (this.config.showOriginal) {
+        toggleOriginalBtn.setAttribute('aria-checked', 'true');
+      } else {
+        toggleOriginalBtn.setAttribute('aria-checked', 'false');
+      }
+    }
+
+    // Update position indicator
+    if (positionIndicator) {
+      positionIndicator.textContent = this.config.originalPosition === 'above' ? '위' : '아래';
+    }
+  }
+
+  /**
+   * Toggle settings menu
+   */
+  private toggleSettingsMenu() {
+    if (!this.settingsMenu) return;
+
+    if (this.settingsMenu.style.display === 'none') {
+      this.settingsMenu.style.display = 'block';
+      this.updateMenuState(this.settingsMenu);
+    } else {
+      this.settingsMenu.style.display = 'none';
+    }
+  }
+
+  /**
+   * Close settings menu
+   */
+  private closeSettingsMenu() {
+    if (this.settingsMenu) {
+      this.settingsMenu.style.display = 'none';
+    }
+  }
+
+  /**
+   * Toggle show original setting
+   */
+  private async toggleShowOriginal() {
+    if (!this.config) return;
+
+    this.config.showOriginal = !this.config.showOriginal;
+    await StorageManager.saveConfig(this.config);
+
+    // Update menu state
+    if (this.settingsMenu) {
+      this.updateMenuState(this.settingsMenu);
+    }
+
+    // Update caption display immediately
+    this.updateCaptionDisplay();
+
+    console.log(`[Udemy Translator] Show original: ${this.config.showOriginal}`);
+  }
+
+  /**
+   * Toggle original position setting
+   */
+  private async toggleOriginalPosition() {
+    if (!this.config) return;
+
+    this.config.originalPosition = this.config.originalPosition === 'above' ? 'below' : 'above';
+    await StorageManager.saveConfig(this.config);
+
+    // Update menu state
+    if (this.settingsMenu) {
+      this.updateMenuState(this.settingsMenu);
+    }
+
+    // Update caption display immediately
+    this.updateCaptionDisplay();
+
+    console.log(`[Udemy Translator] Original position: ${this.config.originalPosition}`);
+  }
+
   destroy() {
     if (this.transcriptObserver) {
       this.transcriptObserver.disconnect();
@@ -696,6 +907,14 @@ class UdemySubtitleTranslator {
     if (this.progressIndicator) {
       this.progressIndicator.remove();
       this.progressIndicator = null;
+    }
+    if (this.settingsButton?.parentElement) {
+      this.settingsButton.parentElement.remove();
+      this.settingsButton = null;
+    }
+    if (this.settingsMenu) {
+      this.settingsMenu.remove();
+      this.settingsMenu = null;
     }
     this.captionContainer = null;
     this.transcriptPanel = null;
