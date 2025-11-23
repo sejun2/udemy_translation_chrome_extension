@@ -456,8 +456,8 @@ class UdemySubtitleTranslator {
     const groupedCues = SentenceMerger.groupCuesBySentence(allCues);
     console.log(`[Udemy Translator] Grouped into ${groupedCues.length} sentence groups`);
 
-    // Split into batches to avoid timeout (20 groups per batch)
-    const BATCH_SIZE = 20;
+    // Split into batches to avoid timeout (10 groups per batch)
+    const BATCH_SIZE = 10;
     const batches: typeof groupedCues[] = [];
 
     for (let i = 0; i < groupedCues.length; i += BATCH_SIZE) {

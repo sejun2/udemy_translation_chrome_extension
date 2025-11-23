@@ -175,7 +175,7 @@ Notice: Both cue-index 0 and 1 have the SAME complete translation because they a
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${apiKey}`
           },
-          timeout: 60000
+          timeout: 300000
         }
       );
 
