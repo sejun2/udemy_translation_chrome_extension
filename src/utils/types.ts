@@ -3,8 +3,9 @@ export interface TranslationConfig {
   showOriginal?: boolean;
   originalPosition?: 'above' | 'below';
   targetLanguage?: string;
-  translationEngine?: 'chrome' | 'deepseek';
+  translationEngine?: 'chrome' | 'deepseek' | 'gemini';
   deepseekApiKey?: string;
+  geminiApiKey?: string;
 }
 
 export interface StorageData {

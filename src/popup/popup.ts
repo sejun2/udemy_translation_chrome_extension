@@ -6,8 +6,10 @@ class PopupManager {
   private originalPositionSelect: HTMLSelectElement;
   private translationEngineSelect: HTMLSelectElement;
   private deepseekApiKeyInput: HTMLInputElement;
+  private geminiApiKeyInput: HTMLInputElement;
   private targetLanguageSelect: HTMLSelectElement;
   private deepseekSection: HTMLDivElement;
+  private geminiSection: HTMLDivElement;
   private saveButton: HTMLButtonElement;
   private statusDiv: HTMLDivElement;
 
@@ -17,8 +19,10 @@ class PopupManager {
     this.originalPositionSelect = document.getElementById('originalPosition') as HTMLSelectElement;
     this.translationEngineSelect = document.getElementById('translationEngine') as HTMLSelectElement;
     this.deepseekApiKeyInput = document.getElementById('deepseekApiKey') as HTMLInputElement;
+    this.geminiApiKeyInput = document.getElementById('geminiApiKey') as HTMLInputElement;
     this.targetLanguageSelect = document.getElementById('targetLanguage') as HTMLSelectElement;
     this.deepseekSection = document.getElementById('deepseekSection') as HTMLDivElement;
+    this.geminiSection = document.getElementById('geminiSection') as HTMLDivElement;
     this.saveButton = document.getElementById('saveButton') as HTMLButtonElement;
     this.statusDiv = document.getElementById('status') as HTMLDivElement;
 
@@ -39,9 +43,10 @@ class PopupManager {
       this.originalPositionSelect.value = config.originalPosition ?? 'below';
       this.translationEngineSelect.value = config.translationEngine ?? 'chrome';
       this.deepseekApiKeyInput.value = config.deepseekApiKey ?? '';
+      this.geminiApiKeyInput.value = config.geminiApiKey ?? '';
       this.targetLanguageSelect.value = config.targetLanguage ?? 'Korean';
 
-      this.updateDeepSeekVisibility();
+      this.updateApiSectionVisibility();
     } catch (error) {
       this.showStatus('Failed to load settings', 'error');
     }
@@ -53,7 +58,7 @@ class PopupManager {
     });
 
     this.translationEngineSelect.addEventListener('change', () => {
-      this.updateDeepSeekVisibility();
+      this.updateApiSectionVisibility();
     });
 
     [
@@ -67,20 +72,27 @@ class PopupManager {
     });
 
     this.deepseekApiKeyInput.addEventListener('change', () => this.saveSettings(false));
+    this.geminiApiKeyInput.addEventListener('change', () => this.saveSettings(false));
   }
 
-  private updateDeepSeekVisibility() {
-    const isDeepSeek = this.translationEngineSelect.value === 'deepseek';
-    this.deepseekSection.style.display = isDeepSeek ? 'block' : 'none';
+  private updateApiSectionVisibility() {
+    const engine = this.translationEngineSelect.value;
+    this.deepseekSection.style.display = engine === 'deepseek' ? 'block' : 'none';
+    this.geminiSection.style.display = engine === 'gemini' ? 'block' : 'none';
   }
 
   private async saveSettings(refreshTab = false) {
     try {
-      const translationEngine = this.translationEngineSelect.value as 'chrome' | 'deepseek';
+      const translationEngine = this.translationEngineSelect.value as 'chrome' | 'deepseek' | 'gemini';
 
-      // Validate DeepSeek API key if DeepSeek is selected
+      // Validate API keys based on selected engine
       if (translationEngine === 'deepseek' && !this.deepseekApiKeyInput.value.trim()) {
         this.showStatus('DeepSeek API 키를 입력해주세요.', 'error');
+        return;
+      }
+
+      if (translationEngine === 'gemini' && !this.geminiApiKeyInput.value.trim()) {
+        this.showStatus('Gemini API 키를 입력해주세요.', 'error');
         return;
       }
 
@@ -92,6 +104,7 @@ class PopupManager {
         originalPosition: this.originalPositionSelect.value as 'above' | 'below',
         translationEngine,
         deepseekApiKey: this.deepseekApiKeyInput.value.trim(),
+        geminiApiKey: this.geminiApiKeyInput.value.trim(),
         targetLanguage: this.targetLanguageSelect.value
       };
 

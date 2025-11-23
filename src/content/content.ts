@@ -161,8 +161,9 @@ class UdemySubtitleTranslator {
     this.updateCaptionFromTranscript();
     this.observeTranscriptPanel(panel);
 
-    // Translate transcript in background if using DeepSeek
-    if (this.config?.translationEngine === 'deepseek' && !this.isTranslating) {
+    // Translate transcript in background if using an API-based translation engine
+    const apiEngines = ['deepseek', 'gemini'];
+    if (this.config?.translationEngine && apiEngines.includes(this.config.translationEngine) && !this.isTranslating) {
       // Don't await - let it run in background
       this.translateTranscriptPanel(panel).catch(err => {
         console.error('[Udemy Translator] Background translation error:', err);
@@ -344,8 +345,9 @@ class UdemySubtitleTranslator {
     const cueTextElement = activeCue.querySelector('[data-purpose="cue-text"]') || activeCue;
     const text = cueTextElement.textContent?.trim() || '';
 
-    // If using DeepSeek, also update originalCaptionText from data attribute
-    if (this.config?.translationEngine === 'deepseek') {
+    // If using API-based translation, also update originalCaptionText from data attribute
+    const apiEngines = ['deepseek', 'gemini'];
+    if (this.config?.translationEngine && apiEngines.includes(this.config.translationEngine)) {
       const originalText = cueTextElement.getAttribute('data-original-text');
       if (originalText) {
         this.originalCaptionText = originalText.trim();
@@ -436,12 +438,13 @@ class UdemySubtitleTranslator {
    * Translate all cues in the transcript panel using HTML batch translation
    */
   private async translateTranscriptPanel(panel: Element) {
-    if (!this.config?.deepseekApiKey || !this.config?.targetLanguage) {
-      console.warn('[Udemy Translator] DeepSeek API key or target language not configured');
+    const apiKey = this.config?.deepseekApiKey || this.config?.geminiApiKey;
+    if (!apiKey || !this.config?.targetLanguage) {
+      console.warn('[Udemy Translator] API key or target language not configured');
       return;
     }
 
-    console.log('[Udemy Translator] Starting DeepSeek HTML batch translation...');
+    console.log(`[Udemy Translator] Starting ${this.config.translationEngine} HTML batch translation...`);
 
     // Get all transcript cues
     const allCues = Array.from(panel.querySelectorAll('[data-purpose="transcript-cue"]'));
@@ -537,11 +540,12 @@ class UdemySubtitleTranslator {
     const htmlString = htmlParts.join('');
 
     try {
-      // Translate HTML batch
+      // Translate HTML batch using configured provider
       const result = await Translator.translateHTML(
         htmlString,
-        this.config!.deepseekApiKey!,
-        this.config!.targetLanguage || 'Korean'
+        this.config!.deepseekApiKey || this.config!.geminiApiKey || '',
+        this.config!.targetLanguage || 'Korean',
+        this.config!
       );
 
       if (!result.success || !result.translatedText) {

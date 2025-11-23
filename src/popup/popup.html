@@ -23,6 +23,7 @@
       <select id="translationEngine">
         <option value="chrome">크롬 내장 번역</option>
         <option value="deepseek">DeepSeek API</option>
+        <option value="gemini">Google Gemini API</option>
       </select>
     </div>
 
@@ -30,6 +31,12 @@
       <label for="deepseekApiKey">DeepSeek API 키</label>
       <input type="password" id="deepseekApiKey" placeholder="sk-...">
       <p class="hint-small">API 키는 안전하게 저장됩니다.</p>
+    </div>
+
+    <div class="section" id="geminiSection" style="display: none;">
+      <label for="geminiApiKey">Google Gemini API 키</label>
+      <input type="password" id="geminiApiKey" placeholder="AIzaSy...">
+      <p class="hint-small">API 키는 안전하게 저장됩니다. <a href="https://aistudio.google.com/app/apikey" target="_blank">API 키 받기</a></p>
     </div>
 
     <div class="section">
