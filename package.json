@@ -7,13 +7,15 @@
     "dev": "webpack --mode development --watch",
     "test": "playwright test",
     "test:ui": "playwright test --ui",
-    "test:debug": "playwright test --debug"
+    "test:debug": "playwright test --debug",
+    "generate-icons": "node scripts/generate-icons.js"
   },
   "devDependencies": {
     "@playwright/test": "^1.40.0",
     "@types/chrome": "^0.0.254",
     "@types/node": "^20.10.0",
     "copy-webpack-plugin": "^11.0.0",
+    "sharp": "^0.34.5",
     "ts-loader": "^9.5.1",
     "typescript": "^5.3.2",
     "webpack": "^5.89.0",

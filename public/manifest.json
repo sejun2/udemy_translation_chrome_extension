@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "Udemy Subtitle Translator",
   "version": "1.0.0",
-  "description": "Translate Udemy subtitles in real-time using Google Translate and DeepSeek APIs",
+  "description": "Translate Udemy subtitles in real-time using AI translation APIs",
   "permissions": [
     "storage",
     "activeTab",
@@ -11,6 +11,11 @@
   "host_permissions": [
     "https://www.udemy.com/*"
   ],
+  "icons": {
+    "16": "icon16.png",
+    "48": "icon48.png",
+    "128": "icon128.png"
+  },
   "background": {
     "service_worker": "background.js",
     "type": "module"
@@ -27,7 +32,12 @@
   ],
   "action": {
     "default_popup": "popup.html",
-    "default_title": "Udemy Subtitle Translator"
+    "default_title": "Udemy Subtitle Translator",
+    "default_icon": {
+      "16": "icon16.png",
+      "48": "icon48.png",
+      "128": "icon128.png"
+    }
   },
   "content_security_policy": {
     "extension_pages": "script-src 'self'; object-src 'self'"

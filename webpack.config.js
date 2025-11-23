@@ -26,7 +26,13 @@ module.exports = {
   plugins: [
     new CopyPlugin({
       patterns: [
-        { from: 'public', to: '.' },
+        {
+          from: 'public',
+          to: '.',
+          globOptions: {
+            ignore: ['**/logo1.png']
+          }
+        },
         { from: 'src/popup/popup.html', to: 'popup.html' },
         { from: 'src/popup/popup.css', to: 'popup.css' }
       ]
