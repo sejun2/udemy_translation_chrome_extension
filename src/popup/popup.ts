@@ -63,10 +63,10 @@ class PopupManager {
       this.translationEngineSelect,
       this.targetLanguageSelect
     ].forEach(el => {
-      el.addEventListener('change', () => this.saveSettings(true));
+      el.addEventListener('change', () => this.saveSettings(false));
     });
 
-    this.deepseekApiKeyInput.addEventListener('change', () => this.saveSettings(true));
+    this.deepseekApiKeyInput.addEventListener('change', () => this.saveSettings(false));
   }
 
   private updateDeepSeekVisibility() {

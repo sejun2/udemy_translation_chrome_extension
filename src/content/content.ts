@@ -15,9 +15,10 @@ class UdemySubtitleTranslator {
   private isUpdatingCaption = false;
   private transcriptUpdateScheduled = false;
   private maintenanceInterval: number | null = null;
-  private translationCache = new Map<string, string>();
-  private pendingTranslations = new Set<string>();
-  private translationInProgress = false;
+  private progressIndicator: HTMLElement | null = null;
+  private totalBatches = 0;
+  private completedBatches = 0;
+  private isTranslating = false;
 
   async init() {
     console.log('[Udemy Translator] Initializing with transcript reuse strategy...');
@@ -156,7 +157,7 @@ class UdemySubtitleTranslator {
     this.observeTranscriptPanel(panel);
 
     // Translate transcript in background if using DeepSeek
-    if (this.config?.translationEngine === 'deepseek') {
+    if (this.config?.translationEngine === 'deepseek' && !this.isTranslating) {
       // Don't await - let it run in background
       this.translateTranscriptPanel(panel).catch(err => {
         console.error('[Udemy Translator] Background translation error:', err);
@@ -427,7 +428,7 @@ class UdemySubtitleTranslator {
   }
 
   /**
-   * Translate all cues in the transcript panel
+   * Translate all cues in the transcript panel using HTML batch translation
    */
   private async translateTranscriptPanel(panel: Element) {
     if (!this.config?.deepseekApiKey || !this.config?.targetLanguage) {
@@ -435,7 +436,7 @@ class UdemySubtitleTranslator {
       return;
     }
 
-    console.log('[Udemy Translator] Starting DeepSeek translation for transcript...');
+    console.log('[Udemy Translator] Starting DeepSeek HTML batch translation...');
 
     // Get all transcript cues
     const allCues = Array.from(panel.querySelectorAll('[data-purpose="transcript-cue"]'));
@@ -448,100 +449,239 @@ class UdemySubtitleTranslator {
 
     // Group cues by sentence to handle fragmented text
     const groupedCues = SentenceMerger.groupCuesBySentence(allCues);
-
     console.log(`[Udemy Translator] Grouped into ${groupedCues.length} sentence groups`);
 
-    // Translate each group in real-time
-    for (const group of groupedCues) {
-      await this.translateCueGroup(group.cues, group.text);
+    // Split into batches to avoid timeout (20 groups per batch)
+    const BATCH_SIZE = 20;
+    const batches: typeof groupedCues[] = [];
+
+    for (let i = 0; i < groupedCues.length; i += BATCH_SIZE) {
+      batches.push(groupedCues.slice(i, i + BATCH_SIZE));
     }
 
-    console.log('[Udemy Translator] Translation completed');
+    console.log(`[Udemy Translator] Split into ${batches.length} batches (${BATCH_SIZE} groups each)`);
+
+    // Mark translation as in progress
+    this.isTranslating = true;
+
+    // Show progress indicator
+    this.totalBatches = batches.length;
+    this.completedBatches = 0;
+    this.showProgressIndicator();
+
+    // Translate all batches in parallel
+    const batchPromises = batches.map((batch, batchIndex) => {
+      console.log(`[Udemy Translator] Starting batch ${batchIndex + 1}/${batches.length}...`);
+
+      return this.translateBatch(batch, batchIndex * BATCH_SIZE).then(() => {
+        // Update progress
+        this.completedBatches++;
+        this.updateProgressIndicator(this.completedBatches, this.totalBatches);
+        console.log(`[Udemy Translator] ✓ Completed batch ${batchIndex + 1}/${batches.length}`);
+      });
+    });
+
+    // Wait for all batches to complete
+    await Promise.all(batchPromises);
+
+    console.log('[Udemy Translator] All batches translated successfully!');
+
+    // Mark translation as complete
+    this.isTranslating = false;
+
+    // Hide progress indicator
+    this.hideProgressIndicator();
   }
 
   /**
-   * Translate a group of cues that form a complete sentence
-   * Updates the DOM immediately when translation is received
+   * Translate a batch of sentence groups
    */
-  private async translateCueGroup(cues: Element[], mergedText: string) {
-    if (cues.length === 0 || !mergedText) return;
+  private async translateBatch(groupedCues: { cues: Element[], text: string }[], startGroupIndex: number) {
+    // Build HTML with sentence group information
+    const htmlParts: string[] = [];
+    const cueToTranslationMap = new Map<Element, { groupIndex: number, cueIndexInGroup: number }>();
 
-    // Check cache first
-    if (this.translationCache.has(mergedText)) {
-      const cachedTranslation = this.translationCache.get(mergedText)!;
-      this.applyCachedTranslationToCues(cues, cachedTranslation);
-      return;
-    }
+    groupedCues.forEach((group, groupIndex) => {
+      const actualGroupIndex = startGroupIndex + groupIndex;
 
-    // Skip if already pending
-    if (this.pendingTranslations.has(mergedText)) {
-      return;
-    }
+      // Mark the start of a sentence group
+      htmlParts.push(`<div data-sentence-group="${actualGroupIndex}">`);
 
-    this.pendingTranslations.add(mergedText);
+      group.cues.forEach((cue, cueIndexInGroup) => {
+        const cueTextElement = cue.querySelector('[data-purpose="cue-text"]');
+        if (cueTextElement) {
+          const originalText = cueTextElement.textContent || '';
+
+          // Store original text in data attribute
+          if (!cueTextElement.getAttribute('data-original-text')) {
+            cueTextElement.setAttribute('data-original-text', originalText);
+          }
+
+          // Create cue div with group and cue index
+          htmlParts.push(`<div data-cue-index="${cueIndexInGroup}">${originalText}</div>`);
+
+          // Map the actual DOM element to its group and position
+          cueToTranslationMap.set(cue, { groupIndex: actualGroupIndex, cueIndexInGroup });
+        }
+      });
+
+      // Close sentence group
+      htmlParts.push(`</div>`);
+    });
+
+    const htmlString = htmlParts.join('');
 
     try {
-      // Translate using DeepSeek
-      const result = await Translator.translateWithDeepSeek(
-        mergedText,
+      // Translate HTML batch
+      const result = await Translator.translateHTML(
+        htmlString,
         this.config!.deepseekApiKey!,
         this.config!.targetLanguage || 'Korean'
       );
 
-      if (result.success && result.translatedText) {
-        // Cache the result
-        this.translationCache.set(mergedText, result.translatedText);
-
-        // Apply translation to cues IMMEDIATELY
-        this.applyTranslationToCues(cues, result.translatedText);
-
-        console.log(`[Udemy Translator] ✓ Translated: "${mergedText.substring(0, 30)}..." → "${result.translatedText.substring(0, 30)}..."`);
-      } else {
-        console.error(`[Udemy Translator] Translation failed: ${result.error}`);
-        // Keep original text
-        this.applyTranslationToCues(cues, mergedText);
+      if (!result.success || !result.translatedText) {
+        console.error(`[Udemy Translator] Batch translation failed: ${result.error}`);
+        return;
       }
+
+      console.log('[Udemy Translator] ✓ Received translated HTML, parsing...');
+
+      // Parse translated HTML
+      const parser = new DOMParser();
+      const doc = parser.parseFromString(result.translatedText, 'text/html');
+      const sentenceGroups = doc.querySelectorAll('[data-sentence-group]');
+
+      // Apply translations group by group
+      sentenceGroups.forEach(groupDiv => {
+        const groupIndex = parseInt(groupDiv.getAttribute('data-sentence-group') || '-1', 10);
+        if (groupIndex < 0) return;
+
+        const cuesInGroup = groupDiv.querySelectorAll('[data-cue-index]');
+
+        // DeepSeek already put the SAME complete translation in each cue
+        // So we just take the first one (they should all be identical)
+        const firstCue = cuesInGroup[0];
+        const fullTranslation = firstCue?.textContent?.trim() || '';
+
+        // Find all DOM elements that belong to this group and apply translation
+        cueToTranslationMap.forEach((info, cue) => {
+          if (info.groupIndex === groupIndex) {
+            const cueTextElement = cue.querySelector('[data-purpose="cue-text"]');
+            if (cueTextElement) {
+              cueTextElement.textContent = fullTranslation;
+            }
+          }
+        });
+      });
+
+      console.log(`[Udemy Translator] ✓ Batch translated ${sentenceGroups.length} groups`);
+
     } catch (error) {
-      console.error('[Udemy Translator] Translation error:', error);
-      // Keep original text
-      this.applyTranslationToCues(cues, mergedText);
-    } finally {
-      this.pendingTranslations.delete(mergedText);
+      console.error('[Udemy Translator] Batch translation error:', error);
     }
   }
 
   /**
-   * Apply cached translation to cues
+   * Create and show translation progress indicator
    */
-  private applyCachedTranslationToCues(cues: Element[], translation: string) {
-    // Apply translation to ALL cues in the group
-    for (const cue of cues) {
-      const cueTextElement = cue.querySelector('[data-purpose="cue-text"]');
-      if (cueTextElement) {
-        // Store original text before replacing
-        if (!cueTextElement.getAttribute('data-original-text')) {
-          cueTextElement.setAttribute('data-original-text', cueTextElement.textContent || '');
-        }
-        cueTextElement.textContent = translation;
+  private showProgressIndicator() {
+    if (this.progressIndicator) {
+      return;
+    }
+
+    const indicator = document.createElement('div');
+    indicator.id = 'udemy-translation-progress';
+    indicator.style.cssText = `
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      background: rgba(86, 36, 208, 0.95);
+      color: white;
+      padding: 12px 20px;
+      border-radius: 8px;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      font-size: 14px;
+      font-weight: 500;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+      z-index: 999999;
+      min-width: 200px;
+      transition: all 0.3s ease;
+    `;
+
+    indicator.innerHTML = `
+      <div style="display: flex; align-items: center; gap: 10px;">
+        <div style="
+          width: 16px;
+          height: 16px;
+          border: 2px solid rgba(255, 255, 255, 0.3);
+          border-top-color: white;
+          border-radius: 50%;
+          animation: spin 1s linear infinite;
+        "></div>
+        <div>
+          <div style="font-size: 13px; opacity: 0.9;">번역 중...</div>
+          <div id="progress-text" style="font-size: 12px; opacity: 0.8; margin-top: 2px;">0%</div>
+        </div>
+      </div>
+    `;
+
+    // Add keyframe animation for spinner
+    const style = document.createElement('style');
+    style.textContent = `
+      @keyframes spin {
+        to { transform: rotate(360deg); }
       }
+    `;
+    document.head.appendChild(style);
+
+    document.body.appendChild(indicator);
+    this.progressIndicator = indicator;
+  }
+
+  /**
+   * Update progress indicator
+   */
+  private updateProgressIndicator(completed: number, total: number) {
+    if (!this.progressIndicator) {
+      return;
+    }
+
+    const percentage = Math.round((completed / total) * 100);
+    const progressText = this.progressIndicator.querySelector('#progress-text');
+
+    if (progressText) {
+      progressText.textContent = `${completed}/${total} (${percentage}%)`;
     }
   }
 
   /**
-   * Apply translation to DOM immediately (real-time update)
+   * Hide and remove progress indicator
    */
-  private applyTranslationToCues(cues: Element[], translation: string) {
-    // Apply translation to ALL cues in the group
-    for (const cue of cues) {
-      const cueTextElement = cue.querySelector('[data-purpose="cue-text"]');
-      if (cueTextElement) {
-        // Store original text before replacing
-        if (!cueTextElement.getAttribute('data-original-text')) {
-          cueTextElement.setAttribute('data-original-text', cueTextElement.textContent || '');
-        }
-        cueTextElement.textContent = translation;
-      }
+  private hideProgressIndicator() {
+    if (!this.progressIndicator) {
+      return;
     }
+
+    // Show completion message briefly
+    this.progressIndicator.innerHTML = `
+      <div style="display: flex; align-items: center; gap: 10px;">
+        <div style="font-size: 18px;">✓</div>
+        <div style="font-size: 13px;">번역 완료!</div>
+      </div>
+    `;
+
+    // Fade out and remove after 2 seconds
+    setTimeout(() => {
+      if (this.progressIndicator) {
+        this.progressIndicator.style.opacity = '0';
+        setTimeout(() => {
+          if (this.progressIndicator) {
+            this.progressIndicator.remove();
+            this.progressIndicator = null;
+          }
+        }, 300);
+      }
+    }, 2000);
   }
 
   destroy() {
@@ -553,10 +693,12 @@ class UdemySubtitleTranslator {
       window.clearInterval(this.maintenanceInterval);
       this.maintenanceInterval = null;
     }
+    if (this.progressIndicator) {
+      this.progressIndicator.remove();
+      this.progressIndicator = null;
+    }
     this.captionContainer = null;
     this.transcriptPanel = null;
-    this.translationCache.clear();
-    this.pendingTranslations.clear();
   }
 }
 
