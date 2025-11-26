@@ -2,8 +2,6 @@ import { StorageManager } from '../utils/storage';
 
 class PopupManager {
   private enableToggle: HTMLInputElement;
-  private showOriginalToggle: HTMLInputElement;
-  private originalPositionSelect: HTMLSelectElement;
   private translationEngineSelect: HTMLSelectElement;
   private deepseekApiKeyInput: HTMLInputElement;
   private geminiApiKeyInput: HTMLInputElement;
@@ -15,8 +13,6 @@ class PopupManager {
 
   constructor() {
     this.enableToggle = document.getElementById('enableTranslation') as HTMLInputElement;
-    this.showOriginalToggle = document.getElementById('showOriginal') as HTMLInputElement;
-    this.originalPositionSelect = document.getElementById('originalPosition') as HTMLSelectElement;
     this.translationEngineSelect = document.getElementById('translationEngine') as HTMLSelectElement;
     this.deepseekApiKeyInput = document.getElementById('deepseekApiKey') as HTMLInputElement;
     this.geminiApiKeyInput = document.getElementById('geminiApiKey') as HTMLInputElement;
@@ -39,8 +35,6 @@ class PopupManager {
       const config = await StorageManager.getConfig();
 
       this.enableToggle.checked = config.enabled;
-      this.showOriginalToggle.checked = config.showOriginal ?? true;
-      this.originalPositionSelect.value = config.originalPosition ?? 'below';
       this.translationEngineSelect.value = config.translationEngine ?? 'chrome';
       this.deepseekApiKeyInput.value = config.deepseekApiKey ?? '';
       this.geminiApiKeyInput.value = config.geminiApiKey ?? '';
@@ -63,8 +57,6 @@ class PopupManager {
 
     [
       this.enableToggle,
-      this.showOriginalToggle,
-      this.originalPositionSelect,
       this.translationEngineSelect,
       this.targetLanguageSelect
     ].forEach(el => {
@@ -100,8 +92,6 @@ class PopupManager {
       const config = {
         ...existingConfig,
         enabled: this.enableToggle.checked,
-        showOriginal: this.showOriginalToggle.checked,
-        originalPosition: this.originalPositionSelect.value as 'above' | 'below',
         translationEngine,
         deepseekApiKey: this.deepseekApiKeyInput.value.trim(),
         geminiApiKey: this.geminiApiKeyInput.value.trim(),
