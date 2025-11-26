@@ -709,13 +709,6 @@ class UdemySubtitleTranslator {
       return;
     }
 
-    // Find the transcript toggle button as reference
-    const transcriptToggle = controlBar.querySelector('[data-purpose="transcript-toggle"]');
-    if (!transcriptToggle || !transcriptToggle.parentElement) {
-      console.log('[Udemy Translator] Transcript toggle not found');
-      return;
-    }
-
     // Create settings button container (popper wrapper)
     const buttonContainer = document.createElement('div');
     buttonContainer.className = 'popper-module--popper--mM5Ie';
@@ -737,8 +730,8 @@ class UdemySubtitleTranslator {
     buttonContainer.appendChild(button);
     buttonContainer.appendChild(menu);
 
-    // Insert after transcript toggle
-    transcriptToggle.parentElement.insertAdjacentElement('afterend', buttonContainer);
+    // Insert at the rightmost position of the control bar
+    controlBar.appendChild(buttonContainer);
 
     // Add event listener to toggle menu
     button.addEventListener('click', (e) => {
