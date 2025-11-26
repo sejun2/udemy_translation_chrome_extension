@@ -39,6 +39,12 @@
       "128": "icon128.png"
     }
   },
+  "web_accessible_resources": [
+    {
+      "resources": ["icon48.png"],
+      "matches": ["https://www.udemy.com/*", "https://udemy.com/*"]
+    }
+  ],
   "content_security_policy": {
     "extension_pages": "script-src 'self'; object-src 'self'"
   }

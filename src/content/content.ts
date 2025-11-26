@@ -718,11 +718,13 @@ class UdemySubtitleTranslator {
     button.type = 'button';
     button.className = 'ud-btn ud-btn-small ud-btn-ghost ud-btn-text-sm control-bar-dropdown--trigger--FnmP- control-bar-dropdown--trigger-dark--ZK26r control-bar-dropdown--trigger-small--ogRJ4';
     button.setAttribute('data-purpose', 'caption-settings-toggle');
-    button.innerHTML = `
-      <svg aria-label="자막 설정" role="img" focusable="false" class="ud-icon ud-icon-medium">
-        <use xlink:href="#icon-settings"></use>
-      </svg>
-    `;
+
+    // Add extension icon
+    const icon = document.createElement('img');
+    icon.src = chrome.runtime.getURL('icon48.png');
+    icon.alt = '자막 설정';
+    icon.style.cssText = 'width: 20px; height: 20px; display: block;';
+    button.appendChild(icon);
 
     // Create settings menu
     const menu = this.createSettingsMenu();
