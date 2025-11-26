@@ -6,6 +6,9 @@ import { SentenceMerger } from '../utils/sentenceMerger';
 class UdemySubtitleTranslator {
   private captionObserver: MutationObserver | null = null;
   private transcriptObserver: MutationObserver | null = null;
+  private controlBarObserver: MutationObserver | null = null;
+  private captionAreaObserver: MutationObserver | null = null;
+  private transcriptAreaObserver: MutationObserver | null = null;
   private config: TranslationConfig | null = null;
   private currentActiveText = '';
   private lastDisplayedText = '';
@@ -14,7 +17,6 @@ class UdemySubtitleTranslator {
   private transcriptPanel: Element | null = null;
   private isUpdatingCaption = false;
   private transcriptUpdateScheduled = false;
-  private maintenanceInterval: number | null = null;
   private progressIndicator: HTMLElement | null = null;
   private totalBatches = 0;
   private completedBatches = 0;
@@ -69,8 +71,9 @@ class UdemySubtitleTranslator {
     // Step 4: Add settings button to video controls
     setTimeout(() => this.addSettingsButton(), 2000);
 
-    // Step 5: Lightweight maintenance to reattach observers if DOM gets replaced
-    this.startMaintenanceLoop();
+    // Step 5: Start observing specific areas for dynamic changes
+    setTimeout(() => this.observeCaptionArea(), 2500);
+    setTimeout(() => this.observeTranscriptArea(), 2500);
   }
 
   private ensureTranscriptPanelOpen() {
@@ -277,12 +280,22 @@ class UdemySubtitleTranslator {
 
   }
 
-  private startMaintenanceLoop() {
-    if (this.maintenanceInterval !== null) {
+  /**
+   * Observe caption area for dynamic changes
+   */
+  private observeCaptionArea() {
+    // Find the caption area parent container
+    const captionArea = document.querySelector('[data-purpose="captions-cue-text"]')?.parentElement;
+
+    if (!captionArea) {
+      console.log('[Udemy Translator] Caption area parent not found, will retry');
       return;
     }
 
-    this.maintenanceInterval = window.setInterval(() => {
+    // Disconnect existing observer if any
+    this.captionAreaObserver?.disconnect();
+
+    this.captionAreaObserver = new MutationObserver(() => {
       // Re-find caption container if it was replaced
       if (!this.captionContainer || !document.body.contains(this.captionContainer)) {
         const newCaption = document.querySelector('[data-purpose="captions-cue-text"]');
@@ -295,18 +308,53 @@ class UdemySubtitleTranslator {
           }
         }
       }
+    });
 
+    // Observe only the caption area parent
+    this.captionAreaObserver.observe(captionArea, {
+      childList: true,
+      subtree: true
+    });
+
+    console.log('[Udemy Translator] Caption area observer started');
+  }
+
+  /**
+   * Observe transcript area for dynamic changes
+   */
+  private observeTranscriptArea() {
+    // Find the transcript area parent container (sidebar)
+    const transcriptArea = document.querySelector('[data-purpose="transcript-panel"]')?.parentElement;
+
+    if (!transcriptArea) {
+      console.log('[Udemy Translator] Transcript area parent not found, will retry');
+      return;
+    }
+
+    // Disconnect existing observer if any
+    this.transcriptAreaObserver?.disconnect();
+
+    this.transcriptAreaObserver = new MutationObserver(() => {
       // Re-find transcript panel if it was replaced
       if (!this.transcriptPanel || !document.body.contains(this.transcriptPanel)) {
         const newPanel = document.querySelector('[data-purpose="transcript-panel"]');
         if (newPanel) {
+          console.log('[Udemy Translator] Transcript panel replaced, reattaching observer');
           this.processTranscriptPanel(newPanel);
           if (this.captionContainer && this.currentActiveText) {
             this.displayTranscriptText(this.captionContainer, this.currentActiveText);
           }
         }
       }
-    }, 1500);
+    });
+
+    // Observe only the transcript area parent
+    this.transcriptAreaObserver.observe(transcriptArea, {
+      childList: true,
+      subtree: true
+    });
+
+    console.log('[Udemy Translator] Transcript area observer started');
   }
 
   private getActiveTranscriptElement(panel: Element): Element | null {
@@ -751,7 +799,32 @@ class UdemySubtitleTranslator {
     this.settingsButton = button;
     this.settingsMenu = menu;
 
+    // Start observing control bar for changes
+    this.observeControlBar(controlBar);
+
     console.log('[Udemy Translator] Settings button added to video controls');
+  }
+
+  /**
+   * Observe control bar for DOM changes and re-add button if needed
+   */
+  private observeControlBar(controlBar: Element) {
+    // Disconnect existing observer if any
+    this.controlBarObserver?.disconnect();
+
+    this.controlBarObserver = new MutationObserver(() => {
+      // Check if settings button still exists in the DOM
+      if (!this.settingsButton || !document.body.contains(this.settingsButton)) {
+        console.log('[Udemy Translator] Control bar changed, re-adding settings button');
+        this.addSettingsButton();
+      }
+    });
+
+    // Observe the control bar for child list changes
+    this.controlBarObserver.observe(controlBar, {
+      childList: true,
+      subtree: true
+    });
   }
 
   /**
@@ -899,9 +972,21 @@ class UdemySubtitleTranslator {
       this.transcriptObserver.disconnect();
       this.transcriptObserver = null;
     }
-    if (this.maintenanceInterval !== null) {
-      window.clearInterval(this.maintenanceInterval);
-      this.maintenanceInterval = null;
+    if (this.controlBarObserver) {
+      this.controlBarObserver.disconnect();
+      this.controlBarObserver = null;
+    }
+    if (this.captionAreaObserver) {
+      this.captionAreaObserver.disconnect();
+      this.captionAreaObserver = null;
+    }
+    if (this.transcriptAreaObserver) {
+      this.transcriptAreaObserver.disconnect();
+      this.transcriptAreaObserver = null;
+    }
+    if (this.captionObserver) {
+      this.captionObserver.disconnect();
+      this.captionObserver = null;
     }
     if (this.progressIndicator) {
       this.progressIndicator.remove();
