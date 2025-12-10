@@ -635,7 +635,39 @@ class UdemySubtitleTranslator {
           if (info.groupIndex === groupIndex) {
             const cueTextElement = cue.querySelector('[data-purpose="cue-text"]');
             if (cueTextElement) {
-              cueTextElement.textContent = fullTranslation;
+              // Get original text from data attribute
+              const originalText = cueTextElement.getAttribute('data-original-text') || '';
+
+              // Clear current content
+              cueTextElement.innerHTML = '';
+
+              // Create translation div
+              const translationDiv = document.createElement('div');
+              translationDiv.className = 'udemy-transcript-translation';
+              translationDiv.textContent = fullTranslation;
+              translationDiv.style.cssText = 'font-weight: 600; color: inherit; margin-bottom: 2px;';
+
+              // Create original text div (smaller, gray)
+              const originalDiv = document.createElement('div');
+              originalDiv.className = 'udemy-transcript-original-text';
+              originalDiv.textContent = originalText;
+              originalDiv.style.cssText = 'font-size: 0.85em; color: #6a6f73; opacity: 0.8; line-height: 1.3; margin-top: 2px;';
+
+              // Apply based on config
+              const shouldShowOriginal = this.config?.showOriginal ?? true;
+              const position = this.config?.originalPosition ?? 'below';
+
+              if (shouldShowOriginal && originalText) {
+                if (position === 'above') {
+                  cueTextElement.appendChild(originalDiv);
+                  cueTextElement.appendChild(translationDiv);
+                } else {
+                  cueTextElement.appendChild(translationDiv);
+                  cueTextElement.appendChild(originalDiv);
+                }
+              } else {
+                cueTextElement.appendChild(translationDiv);
+              }
             }
           }
         });
@@ -940,6 +972,67 @@ class UdemySubtitleTranslator {
   }
 
   /**
+   * Update all transcript cues to reflect current config
+   */
+  private updateTranscriptCues() {
+    if (!this.transcriptPanel) {
+      return;
+    }
+
+    const allCues = this.transcriptPanel.querySelectorAll('[data-purpose="transcript-cue"]');
+    const shouldShowOriginal = this.config?.showOriginal ?? true;
+    const position = this.config?.originalPosition ?? 'below';
+
+    allCues.forEach(cue => {
+      const cueTextElement = cue.querySelector('[data-purpose="cue-text"]');
+      if (!cueTextElement) return;
+
+      // Check if translation already exists
+      const translationDiv = cueTextElement.querySelector('.udemy-transcript-translation');
+      const originalDiv = cueTextElement.querySelector('.udemy-transcript-original-text');
+
+      if (!translationDiv) {
+        // Not yet translated, skip
+        return;
+      }
+
+      // Get original text from data attribute
+      const originalText = cueTextElement.getAttribute('data-original-text') || '';
+
+      // Clear and rebuild structure
+      cueTextElement.innerHTML = '';
+
+      // Re-add translation div
+      cueTextElement.appendChild(translationDiv);
+
+      // Handle original text based on config
+      if (shouldShowOriginal && originalText) {
+        if (!originalDiv) {
+          const newOriginalDiv = document.createElement('div');
+          newOriginalDiv.className = 'udemy-transcript-original-text';
+          newOriginalDiv.textContent = originalText;
+          newOriginalDiv.style.cssText = 'font-size: 0.85em; color: #6a6f73; opacity: 0.8; line-height: 1.3; margin-top: 2px;';
+
+          if (position === 'above') {
+            cueTextElement.insertBefore(newOriginalDiv, translationDiv);
+          } else {
+            cueTextElement.appendChild(newOriginalDiv);
+          }
+        } else {
+          if (position === 'above') {
+            cueTextElement.insertBefore(originalDiv, translationDiv);
+          } else {
+            cueTextElement.appendChild(originalDiv);
+          }
+        }
+      }
+      // If shouldShowOriginal is false, originalDiv won't be added (already cleared)
+    });
+
+    console.log(`[Udemy Translator] Updated ${allCues.length} transcript cues`);
+  }
+
+  /**
    * Toggle show original setting
    */
   private async toggleShowOriginal() {
@@ -955,6 +1048,9 @@ class UdemySubtitleTranslator {
 
     // Update caption display immediately
     this.updateCaptionDisplay();
+
+    // Update transcript cues
+    this.updateTranscriptCues();
 
     console.log(`[Udemy Translator] Show original: ${this.config.showOriginal}`);
   }
@@ -975,6 +1071,9 @@ class UdemySubtitleTranslator {
 
     // Update caption display immediately
     this.updateCaptionDisplay();
+
+    // Update transcript cues
+    this.updateTranscriptCues();
 
     console.log(`[Udemy Translator] Original position: ${this.config.originalPosition}`);
   }
