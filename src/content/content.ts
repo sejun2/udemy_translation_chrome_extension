@@ -401,17 +401,25 @@ class UdemySubtitleTranslator {
     }
 
     const cueTextElement = activeCue.querySelector('[data-purpose="cue-text"]') || activeCue;
-    const text = cueTextElement.textContent?.trim() || '';
 
-    // If using API-based translation, also update originalCaptionText from data attribute
+    // If using API-based translation, extract only the translation text
     const apiEngines = ['deepseek', 'gemini'];
     if (this.config?.translationEngine && apiEngines.includes(this.config.translationEngine)) {
+      // Get original text from data attribute
       const originalText = cueTextElement.getAttribute('data-original-text');
       if (originalText) {
         this.originalCaptionText = originalText.trim();
       }
+
+      // Get only the translated text from the translation div
+      const translationDiv = cueTextElement.querySelector('.udemy-transcript-translation');
+      if (translationDiv) {
+        return translationDiv.textContent?.trim() || null;
+      }
     }
 
+    // Fallback: use entire text content (for non-API engines or before translation)
+    const text = cueTextElement.textContent?.trim() || '';
     return text || null;
   }
 
@@ -517,6 +525,11 @@ class UdemySubtitleTranslator {
     const groupedCues = SentenceMerger.groupCuesBySentence(allCues);
     console.log(`[Udemy Translator] Grouped into ${groupedCues.length} sentence groups`);
 
+    // Log first few groups for debugging
+    groupedCues.slice(0, 3).forEach((group, idx) => {
+      console.log(`[Udemy Translator] Group ${idx}: ${group.cues.length} cues, text: "${group.text.substring(0, 100)}..."`);
+    });
+
     // Split into batches to avoid timeout (10 groups per batch)
     const BATCH_SIZE = 10;
     const batches: typeof groupedCues[] = [];
@@ -565,10 +578,13 @@ class UdemySubtitleTranslator {
   private async translateBatch(groupedCues: { cues: Element[], text: string }[], startGroupIndex: number) {
     // Build HTML with sentence group information
     const htmlParts: string[] = [];
-    const cueToTranslationMap = new Map<Element, { groupIndex: number, cueIndexInGroup: number }>();
+    const cueToTranslationMap = new Map<Element, { groupIndex: number, cueIndexInGroup: number, originalGroupText: string }>();
 
     groupedCues.forEach((group, groupIndex) => {
       const actualGroupIndex = startGroupIndex + groupIndex;
+
+      // Collect original texts for the entire group
+      const groupOriginalTexts: string[] = [];
 
       // Mark the start of a sentence group
       htmlParts.push(`<div data-sentence-group="${actualGroupIndex}">`);
@@ -576,9 +592,11 @@ class UdemySubtitleTranslator {
       group.cues.forEach((cue, cueIndexInGroup) => {
         const cueTextElement = cue.querySelector('[data-purpose="cue-text"]');
         if (cueTextElement) {
-          const originalText = cueTextElement.textContent || '';
+          // Get original text from data attribute if already translated, otherwise from textContent
+          const originalText = cueTextElement.getAttribute('data-original-text') || cueTextElement.textContent || '';
+          groupOriginalTexts.push(originalText);
 
-          // Store original text in data attribute
+          // Store original text in data attribute (individual cue text) - only if not already set
           if (!cueTextElement.getAttribute('data-original-text')) {
             cueTextElement.setAttribute('data-original-text', originalText);
           }
@@ -587,7 +605,20 @@ class UdemySubtitleTranslator {
           htmlParts.push(`<div data-cue-index="${cueIndexInGroup}">${originalText}</div>`);
 
           // Map the actual DOM element to its group and position
-          cueToTranslationMap.set(cue, { groupIndex: actualGroupIndex, cueIndexInGroup });
+          cueToTranslationMap.set(cue, {
+            groupIndex: actualGroupIndex,
+            cueIndexInGroup,
+            originalGroupText: '' // Will be set after loop
+          });
+        }
+      });
+
+      // Store the complete group text for each cue in this group
+      const completeGroupText = groupOriginalTexts.join(' ').trim();
+      group.cues.forEach(cue => {
+        const info = cueToTranslationMap.get(cue);
+        if (info) {
+          info.originalGroupText = completeGroupText;
         }
       });
 
@@ -596,6 +627,9 @@ class UdemySubtitleTranslator {
     });
 
     const htmlString = htmlParts.join('');
+
+    console.log(`[Udemy Translator] HTML to translate (first 500 chars):`, htmlString.substring(0, 500));
+    console.log(`[Udemy Translator] Total HTML length: ${htmlString.length} chars`);
 
     try {
       // Translate HTML batch using configured provider
@@ -606,17 +640,22 @@ class UdemySubtitleTranslator {
         this.config!
       );
 
+      console.log(`[Udemy Translator] Translation result success: ${result.success}`);
+
       if (!result.success || !result.translatedText) {
         console.error(`[Udemy Translator] Batch translation failed: ${result.error}`);
         return;
       }
 
       console.log('[Udemy Translator] ✓ Received translated HTML, parsing...');
+      console.log('[Udemy Translator] Translated HTML (first 1000 chars):', result.translatedText.substring(0, 1000));
 
       // Parse translated HTML
       const parser = new DOMParser();
       const doc = parser.parseFromString(result.translatedText, 'text/html');
       const sentenceGroups = doc.querySelectorAll('[data-sentence-group]');
+
+      console.log(`[Udemy Translator] Found ${sentenceGroups.length} sentence groups in translated HTML`);
 
       // Apply translations group by group
       sentenceGroups.forEach(groupDiv => {
@@ -625,50 +664,86 @@ class UdemySubtitleTranslator {
 
         const cuesInGroup = groupDiv.querySelectorAll('[data-cue-index]');
 
-        // DeepSeek already put the SAME complete translation in each cue
-        // So we just take the first one (they should all be identical)
-        const firstCue = cuesInGroup[0];
-        const fullTranslation = firstCue?.textContent?.trim() || '';
+        // Get the complete translation by combining all cues in the group
+        // (Gemini sometimes splits the translation across cues)
+        const translationParts: string[] = [];
+        cuesInGroup.forEach((cue, idx) => {
+          const text = cue.textContent?.trim();
+          if (text) {
+            translationParts.push(text);
+            console.log(`[Udemy Translator] Group ${groupIndex} cue ${idx}:`, text);
+          }
+        });
+        const fullTranslation = translationParts.join(' ');
 
-        // Find all DOM elements that belong to this group and apply translation
+        console.log(`[Udemy Translator] Group ${groupIndex} has ${cuesInGroup.length} translated cues`);
+        console.log(`[Udemy Translator] Group ${groupIndex} FULL translation:`, fullTranslation);
+
+        if (!fullTranslation) {
+          console.warn(`[Udemy Translator] Group ${groupIndex} has EMPTY translation!`);
+        }
+
+        // Find all DOM elements that belong to this group
+        const groupCues: Array<{ cue: Element, info: { groupIndex: number, cueIndexInGroup: number, originalGroupText: string } }> = [];
         cueToTranslationMap.forEach((info, cue) => {
           if (info.groupIndex === groupIndex) {
-            const cueTextElement = cue.querySelector('[data-purpose="cue-text"]');
-            if (cueTextElement) {
-              // Get original text from data attribute
-              const originalText = cueTextElement.getAttribute('data-original-text') || '';
+            groupCues.push({ cue, info });
+          }
+        });
 
-              // Clear current content
-              cueTextElement.innerHTML = '';
+        // Sort by cueIndexInGroup to ensure proper order
+        groupCues.sort((a, b) => a.info.cueIndexInGroup - b.info.cueIndexInGroup);
 
-              // Create translation div
-              const translationDiv = document.createElement('div');
-              translationDiv.className = 'udemy-transcript-translation';
-              translationDiv.textContent = fullTranslation;
-              translationDiv.style.cssText = 'font-weight: 600; color: inherit; margin-bottom: 2px;';
+        console.log(`[Udemy Translator] Group ${groupIndex} has ${groupCues.length} cues in DOM`);
 
-              // Create original text div (smaller, gray)
-              const originalDiv = document.createElement('div');
-              originalDiv.className = 'udemy-transcript-original-text';
-              originalDiv.textContent = originalText;
-              originalDiv.style.cssText = 'font-size: 0.85em; color: #6a6f73; opacity: 0.8; line-height: 1.3; margin-top: 2px;';
+        // Apply translation to ALL cues in the group (so video captions work for all)
+        groupCues.forEach(({ cue, info }, index) => {
+          const cueTextElement = cue.querySelector('[data-purpose="cue-text"]');
+          if (!cueTextElement) return;
 
-              // Apply based on config
-              const shouldShowOriginal = this.config?.showOriginal ?? true;
-              const position = this.config?.originalPosition ?? 'below';
+          // Apply full translation to ALL cues in the group
+          const completeOriginalText = info.originalGroupText;
 
-              if (shouldShowOriginal && originalText) {
-                if (position === 'above') {
-                  cueTextElement.appendChild(originalDiv);
-                  cueTextElement.appendChild(translationDiv);
-                } else {
-                  cueTextElement.appendChild(translationDiv);
-                  cueTextElement.appendChild(originalDiv);
-                }
-              } else {
-                cueTextElement.appendChild(translationDiv);
-              }
+          // Clear current content
+          cueTextElement.innerHTML = '';
+
+          // Create translation span (not div, to maintain inline flow)
+          const translationSpan = document.createElement('span');
+          translationSpan.className = 'udemy-transcript-translation';
+          translationSpan.textContent = fullTranslation;
+          translationSpan.style.cssText = 'display: block; font-weight: 600; color: inherit; margin-bottom: 2px;';
+
+          // Create original text span (smaller, gray)
+          const originalSpan = document.createElement('span');
+          originalSpan.className = 'udemy-transcript-original-text';
+          originalSpan.textContent = completeOriginalText;
+          originalSpan.style.cssText = 'display: block; font-size: 0.85em; color: #6a6f73; opacity: 0.8; line-height: 1.3; margin-top: 2px;';
+
+          // Store complete original text in data attribute for caption display
+          cueTextElement.setAttribute('data-original-text', completeOriginalText);
+
+          // Apply based on config
+          const shouldShowOriginal = this.config?.showOriginal ?? true;
+          const position = this.config?.originalPosition ?? 'below';
+
+          if (shouldShowOriginal && completeOriginalText) {
+            if (position === 'above') {
+              cueTextElement.appendChild(originalSpan);
+              cueTextElement.appendChild(translationSpan);
+            } else {
+              cueTextElement.appendChild(translationSpan);
+              cueTextElement.appendChild(originalSpan);
             }
+          } else {
+            cueTextElement.appendChild(translationSpan);
+          }
+
+          // Hide all cues except the first one in the transcript panel
+          // (but keep the translation in all of them for video captions)
+          if (index !== 0) {
+            const cueElement = cue as HTMLElement;
+            cueElement.style.display = 'none';
+            cueElement.setAttribute('data-merged-cue', 'true');
           }
         });
       });
@@ -984,6 +1059,11 @@ class UdemySubtitleTranslator {
     const position = this.config?.originalPosition ?? 'below';
 
     allCues.forEach(cue => {
+      // Skip merged/hidden cues
+      if ((cue as HTMLElement).getAttribute('data-merged-cue') === 'true') {
+        return;
+      }
+
       const cueTextElement = cue.querySelector('[data-purpose="cue-text"]');
       if (!cueTextElement) return;
 
@@ -1008,15 +1088,15 @@ class UdemySubtitleTranslator {
       // Handle original text based on config
       if (shouldShowOriginal && originalText) {
         if (!originalDiv) {
-          const newOriginalDiv = document.createElement('div');
-          newOriginalDiv.className = 'udemy-transcript-original-text';
-          newOriginalDiv.textContent = originalText;
-          newOriginalDiv.style.cssText = 'font-size: 0.85em; color: #6a6f73; opacity: 0.8; line-height: 1.3; margin-top: 2px;';
+          const newOriginalSpan = document.createElement('span');
+          newOriginalSpan.className = 'udemy-transcript-original-text';
+          newOriginalSpan.textContent = originalText;
+          newOriginalSpan.style.cssText = 'display: block; font-size: 0.85em; color: #6a6f73; opacity: 0.8; line-height: 1.3; margin-top: 2px;';
 
           if (position === 'above') {
-            cueTextElement.insertBefore(newOriginalDiv, translationDiv);
+            cueTextElement.insertBefore(newOriginalSpan, translationDiv);
           } else {
-            cueTextElement.appendChild(newOriginalDiv);
+            cueTextElement.appendChild(newOriginalSpan);
           }
         } else {
           if (position === 'above') {

@@ -1,6 +1,5 @@
 import { TranslationResponse } from '../types';
 import { ITranslationProvider } from './ITranslationProvider';
-import axios from 'axios';
 
 /**
  * Google Gemini translation provider
@@ -34,14 +33,22 @@ export class GeminiProvider implements ITranslationProvider {
     }
 
     try {
-      const response = await axios.post(
-        `https://generativelanguage.googleapis.com/v1beta/models/${this.model}:generateContent`,
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10000);
+
+      const response = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/${this.model}:generateContent?key=${this.apiKey}`,
         {
-          contents: [
-            {
-              parts: [
-                {
-                  text: `You are a professional translator. Your task is to translate text to ${targetLanguage}. Rules:
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            contents: [
+              {
+                parts: [
+                  {
+                    text: `You are a professional translator. Your task is to translate text to ${targetLanguage}. Rules:
 1. Only output the translated text, nothing else
 2. Do not add explanations, notes, or commentary
 3. Preserve the original meaning and tone
@@ -50,21 +57,24 @@ export class GeminiProvider implements ITranslationProvider {
 Translate this to ${targetLanguage}:
 
 ${text}`
-                }
-              ]
-            }
-          ]
-        },
-        {
-          headers: {
-            'Content-Type': 'application/json',
-            'X-goog-api-key': this.apiKey
-          },
-          timeout: 10000
+                  }
+                ]
+              }
+            ]
+          }),
+          signal: controller.signal
         }
       );
 
-      const translatedText = response.data.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
+      clearTimeout(timeoutId);
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(`Gemini API error: ${response.status} - ${errorData?.error?.message || 'Unknown error'}`);
+      }
+
+      const data = await response.json();
+      const translatedText = data.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
 
       if (!translatedText) {
         throw new Error('Empty response from Gemini API');
@@ -78,10 +88,8 @@ ${text}`
       console.error('[Gemini Provider] Translation error:', error);
 
       let errorMessage = 'Translation failed';
-      if (error.response) {
-        errorMessage = `Gemini API error: ${error.response.status} - ${error.response.data?.error?.message || 'Unknown error'}`;
-      } else if (error.request) {
-        errorMessage = 'Network error: Unable to reach Gemini API';
+      if (error.name === 'AbortError') {
+        errorMessage = 'Translation timeout';
       } else {
         errorMessage = error.message || 'Unknown error';
       }
@@ -111,14 +119,22 @@ ${text}`
     }
 
     try {
-      const response = await axios.post(
-        `https://generativelanguage.googleapis.com/v1beta/models/${this.model}:generateContent`,
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 300000);
+
+      const response = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/${this.model}:generateContent?key=${this.apiKey}`,
         {
-          contents: [
-            {
-              parts: [
-                {
-                  text: `You are a professional translator. Your task is to translate HTML content to ${targetLanguage}.
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            contents: [
+              {
+                parts: [
+                  {
+                    text: `You are a professional translator. Your task is to translate HTML content to ${targetLanguage}.
 
 CRITICAL RULES:
 1. Maintain the EXACT HTML structure - do not add, remove, or modify any HTML tags, attributes, or classes
@@ -157,21 +173,24 @@ Notice: Both cue-index 0 and 1 have the SAME complete translation because they a
 Translate the following HTML to ${targetLanguage}. Remember: preserve the EXACT HTML structure, translate only text content:
 
 ${html}`
-                }
-              ]
-            }
-          ]
-        },
-        {
-          headers: {
-            'Content-Type': 'application/json',
-            'X-goog-api-key': this.apiKey
-          },
-          timeout: 300000
+                  }
+                ]
+              }
+            ]
+          }),
+          signal: controller.signal
         }
       );
 
-      let translatedHTML = response.data.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
+      clearTimeout(timeoutId);
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(`Gemini API error: ${response.status} - ${errorData?.error?.message || 'Unknown error'}`);
+      }
+
+      const data = await response.json();
+      let translatedHTML = data.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
 
       if (!translatedHTML) {
         throw new Error('Empty response from Gemini API');
@@ -192,10 +211,8 @@ ${html}`
       console.error('[Gemini Provider] HTML translation error:', error);
 
       let errorMessage = 'Translation failed';
-      if (error.response) {
-        errorMessage = `Gemini API error: ${error.response.status} - ${error.response.data?.error?.message || 'Unknown error'}`;
-      } else if (error.request) {
-        errorMessage = 'Network error: Unable to reach Gemini API';
+      if (error.name === 'AbortError') {
+        errorMessage = 'Translation timeout';
       } else {
         errorMessage = error.message || 'Unknown error';
       }

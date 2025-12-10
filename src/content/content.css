@@ -103,6 +103,46 @@
   opacity: 0.8;
 }
 
+/**
+ * Active Cue Color Inheritance
+ * Ensures translation text inherits Udemy's active cue color and background
+ * Targets the highlight class that Udemy applies
+ */
+
+/* Ensure all our elements are transparent so parent background shows through */
+.udemy-transcript-translation,
+.udemy-transcript-original-text {
+  background: transparent !important;
+  background-color: transparent !important;
+  color: inherit !important;
+  display: block;
+}
+
+/* Remove any conflicting styles on cue-text */
+[data-purpose="transcript-cue"] [data-purpose="cue-text"] {
+  background: inherit !important;
+  color: inherit !important;
+}
+
+/* Specific targeting for highlighted cues */
+[data-purpose="transcript-cue"] [data-purpose="cue-text"][class*="highlight"] {
+  color: inherit !important;
+  background: inherit !important;
+}
+
+[data-purpose="transcript-cue"] [data-purpose="cue-text"][class*="highlight"] .udemy-transcript-translation,
+[data-purpose="transcript-cue"] [data-purpose="cue-text"][class*="highlight"] .udemy-transcript-original-text {
+  color: inherit !important;
+  background: transparent !important;
+}
+
+/* Also target aria-current for accessibility */
+[data-purpose="transcript-cue"][aria-current="true"] [data-purpose="cue-text"],
+[data-purpose="transcript-cue"][aria-current="true"] [data-purpose="cue-text"] .udemy-transcript-translation {
+  color: inherit !important;
+  background: transparent !important;
+}
+
 
 /**
  * Settings Menu Styles

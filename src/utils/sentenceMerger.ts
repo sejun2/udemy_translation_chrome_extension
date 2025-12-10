@@ -37,6 +37,29 @@ export class SentenceMerger {
       /\bthat$/i,          // "know that"
       /\bwhich$/i,         // "the one which"
       /\bwho$/i,           // "person who"
+      /\bas$/i,            // "as well as"
+      /\bis$/i,            // "this is"
+      /\bare$/i,           // "they are"
+      /\bwas$/i,           // "it was"
+      /\bwere$/i,          // "they were"
+      /\bhas$/i,           // "it has"
+      /\bhave$/i,          // "they have"
+      /\bhad$/i,           // "it had"
+      // Two-word patterns (article/adjective + noun)
+      /\ba set$/i,         // "a set"
+      /\bthe set$/i,       // "the set"
+      /\bof special$/i,    // "of special"
+      /\ba special$/i,     // "a special"
+      // Adjectives that usually precede nouns
+      /\bspecial$/i,       // "special [noun]"
+      /\bimportant$/i,     // "important [noun]"
+      /\bnew$/i,           // "new [noun]"
+      /\bold$/i,           // "old [noun]"
+      /\bgood$/i,          // "good [noun]"
+      /\bbad$/i,           // "bad [noun]"
+      /\bfirst$/i,         // "first [noun]"
+      /\blast$/i,          // "last [noun]"
+      /\bnext$/i,          // "next [noun]"
     ];
 
     return incompletePatterns.some(pattern => pattern.test(trimmed));
