@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="ko">
+<html>
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -8,54 +8,66 @@
 </head>
 <body>
   <div class="container">
-    <h1>Udemy Subtitle Helper</h1>
+    <h1 data-i18n="extName">Udemy Subtitle Helper</h1>
+
+    <div class="section">
+      <label for="uiLanguage" data-i18n="uiLanguage">UI Language</label>
+      <select id="uiLanguage">
+        <option value="ko" data-i18n="languageKorean">한국어</option>
+        <option value="en" data-i18n="languageEnglish">English</option>
+        <option value="ja" data-i18n="languageJapanese">日本語</option>
+        <option value="zh" data-i18n="languageChinese">中文</option>
+      </select>
+    </div>
 
     <div class="section">
       <label class="toggle-container">
-        <span>번역 기능 활성화</span>
+        <span data-i18n="enableTranslation">Enable Translation</span>
         <input type="checkbox" id="enableTranslation">
         <span class="toggle-slider"></span>
       </label>
     </div>
 
     <div class="section">
-      <label for="translationEngine">번역 방식</label>
+      <label for="translationEngine" data-i18n="translationMethod">Translation Method</label>
       <select id="translationEngine">
-        <option value="chrome">크롬 내장 번역</option>
-        <option value="deepseek">DeepSeek API</option>
-        <option value="gemini">Google Gemini API</option>
+        <option value="chrome" data-i18n="chromeBuiltin">Chrome Built-in Translation</option>
+        <option value="deepseek" data-i18n="deepseekAPI">DeepSeek API</option>
+        <option value="gemini" data-i18n="geminiAPI">Google Gemini API</option>
       </select>
     </div>
 
     <div class="section" id="deepseekSection" style="display: none;">
-      <label for="deepseekApiKey">DeepSeek API 키</label>
+      <label for="deepseekApiKey" data-i18n="deepseekApiKey">DeepSeek API Key</label>
       <input type="password" id="deepseekApiKey" placeholder="sk-...">
-      <p class="hint-small">API 키는 안전하게 저장됩니다.</p>
+      <p class="hint-small" data-i18n="apiKeySafe">API keys are stored securely.</p>
     </div>
 
     <div class="section" id="geminiSection" style="display: none;">
-      <label for="geminiApiKey">Google Gemini API 키</label>
+      <label for="geminiApiKey" data-i18n="geminiApiKey">Google Gemini API Key</label>
       <input type="password" id="geminiApiKey" placeholder="AIzaSy...">
-      <p class="hint-small">API 키는 안전하게 저장됩니다. <a href="https://aistudio.google.com/app/apikey" target="_blank">API 키 받기</a></p>
+      <p class="hint-small">
+        <span data-i18n="apiKeySafe">API keys are stored securely.</span>
+        <a href="https://aistudio.google.com/app/apikey" target="_blank" data-i18n="getApiKey">Get API Key</a>
+      </p>
     </div>
 
     <div class="section">
-      <label for="targetLanguage">번역 언어</label>
+      <label for="targetLanguage" data-i18n="targetLanguage">Target Language</label>
       <select id="targetLanguage">
-        <option value="Korean">한국어</option>
-        <option value="English">English</option>
-        <option value="Japanese">日本語</option>
-        <option value="Chinese">中文</option>
-        <option value="Spanish">Español</option>
-        <option value="French">Français</option>
+        <option value="Korean" data-i18n="languageKorean">한국어</option>
+        <option value="English" data-i18n="languageEnglish">English</option>
+        <option value="Japanese" data-i18n="languageJapanese">日本語</option>
+        <option value="Chinese" data-i18n="languageChinese">中文</option>
+        <option value="Spanish" data-i18n="languageSpanish">Español</option>
+        <option value="French" data-i18n="languageFrench">Français</option>
       </select>
-      <p class="hint-small">DeepSeek API 사용 시에만 적용됩니다.</p>
     </div>
 
     <div class="section">
-      <p class="hint">설정 저장 시 현재 Udemy 탭이 새로고침됩니다.</p>
-      <p class="hint-small">자막 표시 설정은 비디오 플레이어의 설정 아이콘에서 조정할 수 있습니다.</p>
-      <button id="saveButton" class="save-button">저장</button>
+      <p class="hint" data-i18n="saveNote">The current Udemy tab will refresh when settings are saved.</p>
+      <p class="hint-small" data-i18n="captionSettingNote">Caption display settings can be adjusted from the settings icon in the video player.</p>
+      <button id="saveButton" class="save-button" data-i18n="saveButton">Save</button>
     </div>
 
     <div id="status" class="status"></div>

@@ -1,0 +1,104 @@
+{
+  "extName": {
+    "message": "Udemy 자막 번역기"
+  },
+  "extDescription": {
+    "message": "AI 번역 API를 사용하여 Udemy 자막을 실시간으로 번역합니다"
+  },
+  "enableTranslation": {
+    "message": "번역 기능 활성화"
+  },
+  "translationMethod": {
+    "message": "번역 방식"
+  },
+  "chromeBuiltin": {
+    "message": "크롬 내장 번역"
+  },
+  "deepseekAPI": {
+    "message": "DeepSeek API"
+  },
+  "geminiAPI": {
+    "message": "Google Gemini API"
+  },
+  "deepseekApiKey": {
+    "message": "DeepSeek API 키"
+  },
+  "geminiApiKey": {
+    "message": "Google Gemini API 키"
+  },
+  "apiKeySafe": {
+    "message": "API 키는 안전하게 저장됩니다."
+  },
+  "getApiKey": {
+    "message": "API 키 받기"
+  },
+  "targetLanguage": {
+    "message": "번역 언어"
+  },
+  "deepseekOnly": {
+    "message": "DeepSeek API 사용 시에만 적용됩니다."
+  },
+  "saveNote": {
+    "message": "설정 저장 시 현재 Udemy 탭이 새로고침됩니다."
+  },
+  "captionSettingNote": {
+    "message": "자막 표시 설정은 비디오 플레이어의 설정 아이콘에서 조정할 수 있습니다."
+  },
+  "saveButton": {
+    "message": "저장"
+  },
+  "loadSettingsFailed": {
+    "message": "설정을 불러오는데 실패했습니다"
+  },
+  "deepseekKeyRequired": {
+    "message": "DeepSeek API 키를 입력해주세요."
+  },
+  "geminiKeyRequired": {
+    "message": "Gemini API 키를 입력해주세요."
+  },
+  "settingsSaved": {
+    "message": "설정이 저장되었습니다."
+  },
+  "settingsSaveFailed": {
+    "message": "설정 저장에 실패했습니다."
+  },
+  "translating": {
+    "message": "번역 중..."
+  },
+  "translationComplete": {
+    "message": "번역 완료!"
+  },
+  "captionSettings": {
+    "message": "자막 설정"
+  },
+  "showOriginal": {
+    "message": "원본 자막 표시"
+  },
+  "originalPosition": {
+    "message": "원본 위치"
+  },
+  "above": {
+    "message": "위"
+  },
+  "below": {
+    "message": "아래"
+  },
+  "languageKorean": {
+    "message": "한국어"
+  },
+  "languageEnglish": {
+    "message": "English"
+  },
+  "languageJapanese": {
+    "message": "日本語"
+  },
+  "languageChinese": {
+    "message": "中文"
+  },
+  "languageSpanish": {
+    "message": "Español"
+  },
+  "languageFrench": {
+    "message": "Français"
+  }
+}

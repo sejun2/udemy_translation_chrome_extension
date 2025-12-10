@@ -2,6 +2,7 @@ import { StorageManager } from '../utils/storage';
 import { TranslationConfig } from '../utils/types';
 import { Translator } from '../utils/translator';
 import { SentenceMerger } from '../utils/sentenceMerger';
+import { getMessage, getBrowserLanguage, SupportedLanguage } from '../utils/i18n';
 
 class UdemySubtitleTranslator {
   private captionObserver: MutationObserver | null = null;
@@ -23,6 +24,7 @@ class UdemySubtitleTranslator {
   private isTranslating = false;
   private settingsButton: HTMLElement | null = null;
   private settingsMenu: HTMLElement | null = null;
+  private uiLanguage: SupportedLanguage = getBrowserLanguage();
 
   async init() {
     console.log('[Udemy Translator] Initializing with transcript reuse strategy...');
@@ -30,6 +32,9 @@ class UdemySubtitleTranslator {
 
     this.config = await StorageManager.getConfig();
     console.log('[Udemy Translator] Config loaded:', this.config);
+
+    // Set UI language from config or use browser language
+    this.uiLanguage = this.config.uiLanguage || getBrowserLanguage();
 
     if (!this.config.enabled) {
       console.log('[Udemy Translator] Translation is disabled. Enable it in the popup.');
@@ -40,6 +45,11 @@ class UdemySubtitleTranslator {
       if (area === 'sync' && changes.translationConfig) {
         this.config = changes.translationConfig.newValue;
         console.log('[Udemy Translator] Config updated:', this.config);
+
+        // Update UI language if changed
+        if (this.config?.uiLanguage) {
+          this.uiLanguage = this.config.uiLanguage;
+        }
 
         if (this.config && this.config.enabled) {
           this.restart();
@@ -676,7 +686,7 @@ class UdemySubtitleTranslator {
           animation: spin 1s linear infinite;
         "></div>
         <div>
-          <div style="font-size: 13px; opacity: 0.9;">번역 중...</div>
+          <div style="font-size: 13px; opacity: 0.9;">${getMessage('translating', this.uiLanguage)}</div>
           <div id="progress-text" style="font-size: 12px; opacity: 0.8; margin-top: 2px;">0%</div>
         </div>
       </div>
@@ -723,7 +733,7 @@ class UdemySubtitleTranslator {
     this.progressIndicator.innerHTML = `
       <div style="display: flex; align-items: center; gap: 10px;">
         <div style="font-size: 18px;">✓</div>
-        <div style="font-size: 13px;">번역 완료!</div>
+        <div style="font-size: 13px;">${getMessage('translationComplete', this.uiLanguage)}</div>
       </div>
     `;
 
@@ -770,7 +780,7 @@ class UdemySubtitleTranslator {
     // Add extension icon
     const icon = document.createElement('img');
     icon.src = chrome.runtime.getURL('icon48.png');
-    icon.alt = '자막 설정';
+    icon.alt = getMessage('captionSettings', this.uiLanguage);
     icon.style.cssText = 'width: 20px; height: 20px; display: block;';
     button.appendChild(icon);
 
@@ -849,19 +859,19 @@ class UdemySubtitleTranslator {
 
     menu.innerHTML = `
       <div style="padding: 8px 16px; border-bottom: 1px solid rgba(255, 255, 255, 0.1); margin-bottom: 8px;">
-        <div style="color: #fff; font-size: 14px; font-weight: 600;">자막 설정</div>
+        <div style="color: #fff; font-size: 14px; font-weight: 600;">${getMessage('captionSettings', this.uiLanguage)}</div>
       </div>
       <div style="padding: 4px 0;">
         <button type="button" class="ud-btn ud-btn-medium ud-btn-ghost ud-text-sm ud-block-list-item ud-block-list-item-small ud-block-list-item-neutral" data-action="toggle-original" style="width: 100%; justify-content: flex-start; padding: 8px 16px;">
           <div class="ud-block-list-item-content" style="display: flex; align-items: center; justify-content: space-between; width: 100%;">
-            <span>원본 자막 표시</span>
+            <span>${getMessage('showOriginal', this.uiLanguage)}</span>
             <span class="control-bar-dropdown--checkbox-slider--3T-2W" style="margin-left: auto;"></span>
           </div>
         </button>
         <button type="button" class="ud-btn ud-btn-medium ud-btn-ghost ud-text-sm ud-block-list-item ud-block-list-item-small ud-block-list-item-neutral" data-action="toggle-position" style="width: 100%; justify-content: flex-start; padding: 8px 16px;">
           <div class="ud-block-list-item-content" style="display: flex; align-items: center; justify-content: space-between; width: 100%;">
-            <span>원본 위치</span>
-            <span class="position-indicator" style="margin-left: auto; font-size: 12px; color: #ccc;">아래</span>
+            <span>${getMessage('originalPosition', this.uiLanguage)}</span>
+            <span class="position-indicator" style="margin-left: auto; font-size: 12px; color: #ccc;">${getMessage('below', this.uiLanguage)}</span>
           </div>
         </button>
       </div>
@@ -900,7 +910,9 @@ class UdemySubtitleTranslator {
 
     // Update position indicator
     if (positionIndicator) {
-      positionIndicator.textContent = this.config.originalPosition === 'above' ? '위' : '아래';
+      positionIndicator.textContent = this.config.originalPosition === 'above'
+        ? getMessage('above', this.uiLanguage)
+        : getMessage('below', this.uiLanguage);
     }
   }
 

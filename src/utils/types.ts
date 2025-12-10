@@ -6,6 +6,7 @@ export interface TranslationConfig {
   translationEngine?: 'chrome' | 'deepseek' | 'gemini';
   deepseekApiKey?: string;
   geminiApiKey?: string;
+  uiLanguage?: 'ko' | 'ja' | 'zh' | 'en';
 }
 
 export interface StorageData {

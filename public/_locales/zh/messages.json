@@ -1,0 +1,104 @@
+{
+  "extName": {
+    "message": "Udemy字幕翻译"
+  },
+  "extDescription": {
+    "message": "使用AI翻译API实时翻译Udemy字幕"
+  },
+  "enableTranslation": {
+    "message": "启用翻译功能"
+  },
+  "translationMethod": {
+    "message": "翻译方式"
+  },
+  "chromeBuiltin": {
+    "message": "Chrome内置翻译"
+  },
+  "deepseekAPI": {
+    "message": "DeepSeek API"
+  },
+  "geminiAPI": {
+    "message": "Google Gemini API"
+  },
+  "deepseekApiKey": {
+    "message": "DeepSeek API密钥"
+  },
+  "geminiApiKey": {
+    "message": "Google Gemini API密钥"
+  },
+  "apiKeySafe": {
+    "message": "API密钥将被安全存储。"
+  },
+  "getApiKey": {
+    "message": "获取API密钥"
+  },
+  "targetLanguage": {
+    "message": "翻译语言"
+  },
+  "deepseekOnly": {
+    "message": "仅在使用DeepSeek API时适用。"
+  },
+  "saveNote": {
+    "message": "保存设置后，当前Udemy标签页将会刷新。"
+  },
+  "captionSettingNote": {
+    "message": "字幕显示设置可在视频播放器的设置图标中调整。"
+  },
+  "saveButton": {
+    "message": "保存"
+  },
+  "loadSettingsFailed": {
+    "message": "加载设置失败"
+  },
+  "deepseekKeyRequired": {
+    "message": "请输入DeepSeek API密钥。"
+  },
+  "geminiKeyRequired": {
+    "message": "请输入Gemini API密钥。"
+  },
+  "settingsSaved": {
+    "message": "设置已保存。"
+  },
+  "settingsSaveFailed": {
+    "message": "保存设置失败。"
+  },
+  "translating": {
+    "message": "翻译中..."
+  },
+  "translationComplete": {
+    "message": "翻译完成！"
+  },
+  "captionSettings": {
+    "message": "字幕设置"
+  },
+  "showOriginal": {
+    "message": "显示原文字幕"
+  },
+  "originalPosition": {
+    "message": "原文位置"
+  },
+  "above": {
+    "message": "上方"
+  },
+  "below": {
+    "message": "下方"
+  },
+  "languageKorean": {
+    "message": "한국어"
+  },
+  "languageEnglish": {
+    "message": "English"
+  },
+  "languageJapanese": {
+    "message": "日本語"
+  },
+  "languageChinese": {
+    "message": "中文"
+  },
+  "languageSpanish": {
+    "message": "Español"
+  },
+  "languageFrench": {
+    "message": "Français"
+  }
+}

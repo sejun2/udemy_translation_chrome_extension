@@ -1,0 +1,104 @@
+{
+  "extName": {
+    "message": "Udemy Subtitle Translator"
+  },
+  "extDescription": {
+    "message": "Translate Udemy subtitles in real-time using AI translation APIs"
+  },
+  "enableTranslation": {
+    "message": "Enable Translation"
+  },
+  "translationMethod": {
+    "message": "Translation Method"
+  },
+  "chromeBuiltin": {
+    "message": "Chrome Built-in Translation"
+  },
+  "deepseekAPI": {
+    "message": "DeepSeek API"
+  },
+  "geminiAPI": {
+    "message": "Google Gemini API"
+  },
+  "deepseekApiKey": {
+    "message": "DeepSeek API Key"
+  },
+  "geminiApiKey": {
+    "message": "Google Gemini API Key"
+  },
+  "apiKeySafe": {
+    "message": "API keys are stored securely."
+  },
+  "getApiKey": {
+    "message": "Get API Key"
+  },
+  "targetLanguage": {
+    "message": "Target Language"
+  },
+  "deepseekOnly": {
+    "message": "Only applies when using DeepSeek API."
+  },
+  "saveNote": {
+    "message": "The current Udemy tab will refresh when settings are saved."
+  },
+  "captionSettingNote": {
+    "message": "Caption display settings can be adjusted from the settings icon in the video player."
+  },
+  "saveButton": {
+    "message": "Save"
+  },
+  "loadSettingsFailed": {
+    "message": "Failed to load settings"
+  },
+  "deepseekKeyRequired": {
+    "message": "Please enter your DeepSeek API key."
+  },
+  "geminiKeyRequired": {
+    "message": "Please enter your Gemini API key."
+  },
+  "settingsSaved": {
+    "message": "Settings saved successfully."
+  },
+  "settingsSaveFailed": {
+    "message": "Failed to save settings."
+  },
+  "translating": {
+    "message": "Translating..."
+  },
+  "translationComplete": {
+    "message": "Translation Complete!"
+  },
+  "captionSettings": {
+    "message": "Caption Settings"
+  },
+  "showOriginal": {
+    "message": "Show Original Subtitle"
+  },
+  "originalPosition": {
+    "message": "Original Position"
+  },
+  "above": {
+    "message": "Above"
+  },
+  "below": {
+    "message": "Below"
+  },
+  "languageKorean": {
+    "message": "한국어"
+  },
+  "languageEnglish": {
+    "message": "English"
+  },
+  "languageJapanese": {
+    "message": "日本語"
+  },
+  "languageChinese": {
+    "message": "中文"
+  },
+  "languageSpanish": {
+    "message": "Español"
+  },
+  "languageFrench": {
+    "message": "Français"
+  }
+}

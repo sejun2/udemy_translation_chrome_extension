@@ -1,0 +1,104 @@
+{
+  "extName": {
+    "message": "Udemy字幕翻訳"
+  },
+  "extDescription": {
+    "message": "AI翻訳APIを使用してUdemy字幕をリアルタイムで翻訳します"
+  },
+  "enableTranslation": {
+    "message": "翻訳機能を有効にする"
+  },
+  "translationMethod": {
+    "message": "翻訳方式"
+  },
+  "chromeBuiltin": {
+    "message": "Chrome内蔵翻訳"
+  },
+  "deepseekAPI": {
+    "message": "DeepSeek API"
+  },
+  "geminiAPI": {
+    "message": "Google Gemini API"
+  },
+  "deepseekApiKey": {
+    "message": "DeepSeek APIキー"
+  },
+  "geminiApiKey": {
+    "message": "Google Gemini APIキー"
+  },
+  "apiKeySafe": {
+    "message": "APIキーは安全に保存されます。"
+  },
+  "getApiKey": {
+    "message": "APIキーを取得"
+  },
+  "targetLanguage": {
+    "message": "翻訳言語"
+  },
+  "deepseekOnly": {
+    "message": "DeepSeek API使用時のみ適用されます。"
+  },
+  "saveNote": {
+    "message": "設定を保存すると、現在のUdemyタブが更新されます。"
+  },
+  "captionSettingNote": {
+    "message": "字幕表示設定は、ビデオプレーヤーの設定アイコンから調整できます。"
+  },
+  "saveButton": {
+    "message": "保存"
+  },
+  "loadSettingsFailed": {
+    "message": "設定の読み込みに失敗しました"
+  },
+  "deepseekKeyRequired": {
+    "message": "DeepSeek APIキーを入力してください。"
+  },
+  "geminiKeyRequired": {
+    "message": "Gemini APIキーを入力してください。"
+  },
+  "settingsSaved": {
+    "message": "設定が保存されました。"
+  },
+  "settingsSaveFailed": {
+    "message": "設定の保存に失敗しました。"
+  },
+  "translating": {
+    "message": "翻訳中..."
+  },
+  "translationComplete": {
+    "message": "翻訳完了！"
+  },
+  "captionSettings": {
+    "message": "字幕設定"
+  },
+  "showOriginal": {
+    "message": "原文字幕を表示"
+  },
+  "originalPosition": {
+    "message": "原文の位置"
+  },
+  "above": {
+    "message": "上"
+  },
+  "below": {
+    "message": "下"
+  },
+  "languageKorean": {
+    "message": "한국어"
+  },
+  "languageEnglish": {
+    "message": "English"
+  },
+  "languageJapanese": {
+    "message": "日本語"
+  },
+  "languageChinese": {
+    "message": "中文"
+  },
+  "languageSpanish": {
+    "message": "Español"
+  },
+  "languageFrench": {
+    "message": "Français"
+  }
+}
