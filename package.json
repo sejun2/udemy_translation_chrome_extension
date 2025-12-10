@@ -1,6 +1,6 @@
 {
   "name": "udemy-translation-extension",
-  "version": "1.1.1",
+  "version": "1.1.2",
   "description": "Udemy subtitle translation extension using Google Translate and DeepSeek APIs",
   "scripts": {
     "build": "webpack --mode production",
